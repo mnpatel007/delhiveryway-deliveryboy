@@ -5,12 +5,12 @@
     min-height: 100vh;
     background-color: #f4f6f9;
     padding: 20px;
-    animation: fadeInSignup 0.5s ease-in-out;
+    animation: fadeInLogin 0.5s ease-in-out;
 }
 
 .auth-wrapper {
     width: 100%;
-    max-width: 480px;
+    max-width: 450px;
     background-color: white;
     border-radius: 15px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
@@ -100,6 +100,19 @@
     cursor: not-allowed;
 }
 
+.forgot-password {
+    text-align: right;
+    font-size: 13px;
+    margin-top: -10px;
+    margin-bottom: 20px;
+}
+
+.forgot-password a {
+    color: #4a90e2;
+    text-decoration: none;
+    font-weight: 500;
+}
+
 .error-message {
     background-color: rgba(231, 76, 60, 0.1);
     color: #e74c3c;
@@ -124,10 +137,10 @@
     margin-left: 5px;
 }
 
-@keyframes fadeInSignup {
+@keyframes fadeInLogin {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(30px);
     }
 
     to {
