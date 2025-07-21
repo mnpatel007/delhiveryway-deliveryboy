@@ -19,11 +19,12 @@ const Dashboard = () => {
     const [pendingPopup, setPendingPopup] = useState(null);
     const [socket, setSocket] = useState(null);
 
-    // Redirect if not authenticated
+    // Check authentication first
     if (!isAuthenticated()) {
         return <Navigate to="/login" />;
     }
 
+    // Always call hooks unconditionally
     useEffect(() => {
         // Create socket connection
         const newSocket = io(process.env.REACT_APP_BACKEND_URL);
@@ -33,26 +34,29 @@ const Dashboard = () => {
         return () => {
             if (newSocket) newSocket.disconnect();
         };
-    }, []);
+    }, []); // Empty dependency array
 
     useEffect(() => {
+        // Only proceed if socket and deliveryBoy exist
         if (!socket || !deliveryBoy) return;
 
         // Register delivery boy
         socket.emit('registerDelivery', deliveryBoy.deliveryBoy._id);
 
         // Listen for new delivery assignments
-        socket.on('newDeliveryAssignment', (payload) => {
+        const handleNewAssignment = (payload) => {
             if (!assigned) {
                 setPendingPopup(payload);
             }
-        });
+        };
+
+        socket.on('newDeliveryAssignment', handleNewAssignment);
 
         // Cleanup
         return () => {
-            socket.off('newDeliveryAssignment');
+            socket.off('newDeliveryAssignment', handleNewAssignment);
         };
-    }, [socket, deliveryBoy, assigned]);
+    }, [socket, deliveryBoy, assigned]); // Add all dependencies
 
     const handleAccept = () => {
         setAssigned(pendingPopup);
@@ -80,16 +84,83 @@ const Dashboard = () => {
                 </button>
             </div>
 
-            {/* Rest of the dashboard content remains the same as in previous example */}
             {pendingPopup && !assigned && (
                 <div className="delivery-notification">
-                    {/* Notification content */}
+                    <div className="notification-header">
+                        <FaBell className="notification-icon" />
+                        <h3>New Delivery Assignment</h3>
+                    </div>
+                    <div className="notification-details">
+                        <div className="notification-item">
+                            <FaMoneyBillWave />
+                            <span>Earn: ₹{pendingPopup.earnAmount}</span>
+                        </div>
+                        <div className="notification-item">
+                            <FaMapMarkerAlt />
+                            <span>Destination: {pendingPopup.address}</span>
+                        </div>
+                        <div className="notification-item">
+                            <FaBox />
+                            <span>Items: {pendingPopup.items.length}</span>
+                        </div>
+                    </div>
+                    <div className="notification-actions">
+                        <button
+                            className="btn-accept"
+                            onClick={handleAccept}
+                        >
+                            <FaCheck /> Accept
+                        </button>
+                        <button
+                            className="btn-reject"
+                            onClick={handleReject}
+                        >
+                            <FaTimes /> Reject
+                        </button>
+                    </div>
                 </div>
             )}
 
             {assigned && (
                 <div className="active-delivery-card">
-                    {/* Active delivery content */}
+                    <div className="delivery-header">
+                        <FaBox className="delivery-icon" />
+                        <h3>Active Delivery</h3>
+                    </div>
+                    <div className="delivery-details">
+                        <div className="delivery-detail">
+                            <FaMapMarkerAlt />
+                            <div>
+                                <strong>Delivery Address</strong>
+                                <p>{assigned.address}</p>
+                            </div>
+                        </div>
+                        <div className="delivery-detail">
+                            <FaBox />
+                            <div>
+                                <strong>Shop</strong>
+                                <p>{assigned.shopDetails?.name}</p>
+                            </div>
+                        </div>
+                        <div className="delivery-detail">
+                            <FaMoneyBillWave />
+                            <div>
+                                <strong>Earnings</strong>
+                                <p>₹{assigned.earnAmount}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="delivery-items">
+                        <h4>Delivery Items</h4>
+                        <ul>
+                            {assigned.items.map((item, i) => (
+                                <li key={i}>
+                                    <span>Product ID: {item.productId}</span>
+                                    <span>Quantity: {item.quantity}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 </div>
             )}
         </div>
