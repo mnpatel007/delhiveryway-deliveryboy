@@ -2,13 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import {
-    FaUser,
-    FaEnvelope,
-    FaLock,
-    FaEye,
-    FaEyeSlash
-} from 'react-icons/fa';
+import './SignupPage.css';
 
 const SignupPage = () => {
     const [form, setForm] = useState({
@@ -17,15 +11,11 @@ const SignupPage = () => {
         password: '',
         confirmPassword: ''
     });
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    // Clear error when form changes
     useEffect(() => {
         setError('');
     }, [form]);
@@ -41,13 +31,11 @@ const SignupPage = () => {
     const handleSignup = async (e) => {
         e.preventDefault();
 
-        // Basic validation
         if (form.password !== form.confirmPassword) {
             setError('Passwords do not match');
             return;
         }
 
-        // Basic password strength check
         if (form.password.length < 8) {
             setError('Password must be at least 8 characters long');
             return;
@@ -62,7 +50,6 @@ const SignupPage = () => {
                 `${process.env.REACT_APP_BACKEND_URL}/api/delivery/auth/signup`,
                 signupData
             );
-
             login(res.data);
             navigate('/dashboard');
         } catch (err) {
@@ -71,99 +58,72 @@ const SignupPage = () => {
         }
     };
 
-    const togglePasswordVisibility = (field) => {
-        if (field === 'password') {
-            setShowPassword(!showPassword);
-        } else {
-            setShowConfirmPassword(!showConfirmPassword);
-        }
-    };
-
     return (
-        <div className="auth-container">
-            <div className="auth-wrapper">
-                <div className="auth-header">
-                    <h2>Delivery Boy Signup</h2>
-                    <p>Create your account</p>
-                </div>
+        <div className="signup-container">
+            <div className="signup-wrapper">
+                <form className="signup-form" onSubmit={handleSignup}>
+                    <h2 className="signup-title">Create Delivery Account</h2>
+                    <p className="signup-subtitle">Sign up to start delivering</p>
 
-                <form onSubmit={handleSignup} className="auth-form">
                     {error && <div className="error-message">{error}</div>}
 
                     <div className="input-group">
-                        <FaUser className="input-icon" />
+                        <label htmlFor="name">Full Name</label>
                         <input
+                            id="name"
+                            type="text"
                             name="name"
-                            placeholder="Full Name"
+                            placeholder="Enter your full name"
                             value={form.name}
                             onChange={handleChange}
                             required
-                            className="form-input"
                         />
                     </div>
 
                     <div className="input-group">
-                        <FaEnvelope className="input-icon" />
+                        <label htmlFor="email">Email</label>
                         <input
+                            id="email"
                             type="email"
                             name="email"
-                            placeholder="Email Address"
+                            placeholder="Enter your email"
                             value={form.email}
                             onChange={handleChange}
                             required
-                            className="form-input"
                         />
                     </div>
 
                     <div className="input-group">
-                        <FaLock className="input-icon" />
+                        <label htmlFor="password">Password</label>
                         <input
-                            type={showPassword ? "text" : "password"}
+                            id="password"
+                            type="password"
                             name="password"
-                            placeholder="Password"
+                            placeholder="Create a strong password"
                             value={form.password}
                             onChange={handleChange}
                             required
-                            className="form-input"
                         />
-                        <button
-                            type="button"
-                            className="password-toggle"
-                            onClick={() => togglePasswordVisibility('password')}
-                        >
-                            {showPassword ? <FaEyeSlash /> : <FaEye />}
-                        </button>
                     </div>
 
                     <div className="input-group">
-                        <FaLock className="input-icon" />
+                        <label htmlFor="confirmPassword">Confirm Password</label>
                         <input
-                            type={showConfirmPassword ? "text" : "password"}
+                            id="confirmPassword"
+                            type="password"
                             name="confirmPassword"
-                            placeholder="Confirm Password"
+                            placeholder="Confirm your password"
                             value={form.confirmPassword}
                             onChange={handleChange}
                             required
-                            className="form-input"
                         />
-                        <button
-                            type="button"
-                            className="password-toggle"
-                            onClick={() => togglePasswordVisibility('confirmPassword')}
-                        >
-                            {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                        </button>
                     </div>
 
-                    <button
-                        type="submit"
-                        className="auth-button"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Creating Account...' : 'Sign Up'}
+                    <button type="submit" className="signup-button" disabled={isLoading}>
+                        {isLoading ? 'Creating Account...' : 'Create Account'}
                     </button>
 
-                    <div className="auth-footer">
+                    <div className="login-link">
                         Already have an account?
                         <Link to="/login"> Login</Link>
                     </div>
