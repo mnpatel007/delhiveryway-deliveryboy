@@ -1,26 +1,51 @@
-import { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [deliveryBoy, setDeliveryBoy] = useState(() => {
-        const saved = localStorage.getItem('deliveryBoy');
-        return saved ? JSON.parse(saved) : null;
+        const savedUser = localStorage.getItem('deliveryBoyUser');
+        return savedUser ? JSON.parse(savedUser) : null;
     });
 
     const login = (userData) => {
-        localStorage.setItem('deliveryBoy', JSON.stringify(userData));
         setDeliveryBoy(userData);
+        localStorage.setItem('deliveryBoyUser', JSON.stringify(userData));
     };
 
-    const logout = () => {
-        localStorage.removeItem('deliveryBoy');
-        setDeliveryBoy(null);
+    const logout = async () => {
+        try {
+            // Optional: Call backend logout endpoint if needed
+            await axios.post(
+                `${process.env.REACT_APP_BACKEND_URL}/api/delivery/auth/logout`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${deliveryBoy?.token}`
+                    }
+                }
+            );
+        } catch (error) {
+            console.error('Logout failed', error);
+        } finally {
+            setDeliveryBoy(null);
+            localStorage.removeItem('deliveryBoyUser');
+            window.location.href = '/login';
+        }
+    };
+
+    const isAuthenticated = () => {
+        return !!deliveryBoy;
     };
 
     return (
-        <AuthContext.Provider value={{ deliveryBoy, login, logout }}>
+        <AuthContext.Provider value={{
+            deliveryBoy,
+            login,
+            logout,
+            isAuthenticated
+        }}>
             {children}
         </AuthContext.Provider>
     );
