@@ -13,7 +13,8 @@ import {
     FaMotorcycle,
     FaClock,
     FaPhone,
-    FaUser
+    FaUser,
+    FaMap
 } from 'react-icons/fa';
 import { MdDeliveryDining, MdRestaurant } from 'react-icons/md';
 import './Dashboard.css';
