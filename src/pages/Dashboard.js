@@ -1,6 +1,16 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import io from 'socket.io-client';
+import {
+    FaBox,
+    FaMapMarkerAlt,
+    FaMoneyBillWave,
+    FaSignOutAlt,
+    FaBell,
+    FaCheck,
+    FaTimes
+} from 'react-icons/fa';
+import './Dashboard.css';
 
 const socket = io(process.env.REACT_APP_BACKEND_URL);
 
@@ -11,16 +21,12 @@ const Dashboard = () => {
 
     useEffect(() => {
         if (deliveryBoy) {
-            console.log('✅ Registering delivery boy to socket room...');
             socket.emit('registerDelivery', deliveryBoy.deliveryBoy._id);
         }
 
         socket.on('newDeliveryAssignment', (payload) => {
-            console.log('📦 Received newDeliveryAssignment payload:', payload);
             if (!assigned) {
                 setPendingPopup(payload);
-            } else {
-                console.log('🟡 Ignored because already assigned');
             }
         });
 
@@ -30,39 +36,108 @@ const Dashboard = () => {
     }, [deliveryBoy, assigned]);
 
     const handleAccept = () => {
-        console.log('🟢 Accepted delivery:', pendingPopup);
         setAssigned(pendingPopup);
         setPendingPopup(null);
     };
 
+    const handleReject = () => {
+        setPendingPopup(null);
+    };
+
     return (
-        <div>
-            <h2>Welcome, {deliveryBoy?.deliveryBoy?.name}</h2>
-            <button onClick={logout}>Logout</button>
+        <div className="dashboard-container">
+            <div className="dashboard-header">
+                <div className="profile-section">
+                    <div className="profile-avatar">
+                        {deliveryBoy?.deliveryBoy?.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="profile-info">
+                        <h2>Welcome, {deliveryBoy?.deliveryBoy?.name}</h2>
+                        <p>Delivery Partner</p>
+                    </div>
+                </div>
+                <button className="logout-button" onClick={logout}>
+                    <FaSignOutAlt /> Logout
+                </button>
+            </div>
 
             {pendingPopup && !assigned && (
-                <div className="modal" style={{ border: '1px solid black', padding: '10px', margin: '20px', background: '#f8f8f8' }}>
-                    <h3>🚨 New Delivery Assignment</h3>
-                    <p><strong>Earn:</strong> ₹{pendingPopup.earnAmount}</p>
-                    <p><strong>To:</strong> {pendingPopup.address}</p>
-                    <p><strong>Items:</strong> {pendingPopup.items.length}</p>
-                    <button onClick={handleAccept}>Accept Delivery</button>
+                <div className="delivery-notification">
+                    <div className="notification-header">
+                        <FaBell className="notification-icon" />
+                        <h3>New Delivery Assignment</h3>
+                    </div>
+                    <div className="notification-details">
+                        <div className="notification-item">
+                            <FaMoneyBillWave />
+                            <span>Earn: ₹{pendingPopup.earnAmount}</span>
+                        </div>
+                        <div className="notification-item">
+                            <FaMapMarkerAlt />
+                            <span>Destination: {pendingPopup.address}</span>
+                        </div>
+                        <div className="notification-item">
+                            <FaBox />
+                            <span>Items: {pendingPopup.items.length}</span>
+                        </div>
+                    </div>
+                    <div className="notification-actions">
+                        <button
+                            className="btn-accept"
+                            onClick={handleAccept}
+                        >
+                            <FaCheck /> Accept
+                        </button>
+                        <button
+                            className="btn-reject"
+                            onClick={handleReject}
+                        >
+                            <FaTimes /> Reject
+                        </button>
+                    </div>
                 </div>
             )}
 
             {assigned && (
-                <div style={{ marginTop: '20px' }}>
-                    <h3>📦 Assigned Delivery</h3>
-                    <p><strong>Address:</strong> {assigned.address}</p>
-                    <p><strong>Shop:</strong> {assigned.shopDetails?.name}</p>
-                    <p><strong>Earn:</strong> ₹{assigned.earnAmount}</p>
-                    <ul>
-                        {assigned.items.map((item, i) => (
-                            <li key={i}>
-                                Product ID: {item.productId} × {item.quantity}
-                            </li>
-                        ))}
-                    </ul>
+                <div className="active-delivery-card">
+                    <div className="delivery-header">
+                        <FaBox className="delivery-icon" />
+                        <h3>Active Delivery</h3>
+                    </div>
+                    <div className="delivery-details">
+                        <div className="delivery-detail">
+                            <FaMapMarkerAlt />
+                            <div>
+                                <strong>Delivery Address</strong>
+                                <p>{assigned.address}</p>
+                            </div>
+                        </div>
+                        <div className="delivery-detail">
+                            <FaBox />
+                            <div>
+                                <strong>Shop</strong>
+                                <p>{assigned.shopDetails?.name}</p>
+                            </div>
+                        </div>
+                        <div className="delivery-detail">
+                            <FaMoneyBillWave />
+                            <div>
+                                <strong>Earnings</strong>
+                                <p>₹{assigned.earnAmount}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="delivery-items">
+                        <h4>Delivery Items</h4>
+                        <ul>
+                            {assigned.items.map((item, i) => (
+                                <li key={i}>
+                                    <span>Product ID: {item.productId}</span>
+                                    <span>Quantity: {item.quantity}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 </div>
             )}
         </div>
