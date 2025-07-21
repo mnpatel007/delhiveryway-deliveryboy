@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useMemo } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import io from 'socket.io-client';
@@ -19,10 +19,10 @@ const Dashboard = () => {
     const [pendingPopup, setPendingPopup] = useState(null);
     const [socket, setSocket] = useState(null);
 
-    // Check authentication first
-    if (!isAuthenticated()) {
-        return <Navigate to="/login" />;
-    }
+    // Memoize authentication check
+    const isAuthenticatedUser = useMemo(() => {
+        return isAuthenticated();
+    }, [isAuthenticated]);
 
     // Always call hooks unconditionally
     useEffect(() => {
@@ -56,7 +56,12 @@ const Dashboard = () => {
         return () => {
             socket.off('newDeliveryAssignment', handleNewAssignment);
         };
-    }, [socket, deliveryBoy, assigned]); // Add all dependencies
+    }, [socket, deliveryBoy, assigned]);
+
+    // If not authenticated, redirect to login
+    if (!isAuthenticatedUser) {
+        return <Navigate to="/login" />;
+    }
 
     const handleAccept = () => {
         setAssigned(pendingPopup);
