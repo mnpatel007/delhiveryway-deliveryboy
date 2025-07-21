@@ -1,119 +1,80 @@
-import React, { useState, useContext, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import {
-    FaEnvelope,
-    FaLock,
-    FaEye,
-    FaEyeSlash
-} from 'react-icons/fa';
+import axios from 'axios';
 import './LoginPage.css';
+import { FaEnvelope, FaLock } from 'react-icons/fa';
 
 const LoginPage = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
-
-    const { login, isAuthenticated } = useContext(AuthContext);
+    const { login } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    // Redirect if already authenticated
-    useEffect(() => {
-        if (isAuthenticated()) {
-            navigate('/dashboard');
-        }
-    }, [isAuthenticated, navigate]);
-
-    // Clear error when email or password changes
-    useEffect(() => {
-        setError('');
-    }, [email, password]);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
+        setLoading(true);
         setError('');
-
         try {
             const res = await axios.post(
                 `${process.env.REACT_APP_BACKEND_URL}/api/delivery/auth/login`,
                 { email, password }
             );
-
             login(res.data);
             navigate('/dashboard');
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed. Please try again.');
-            setIsLoading(false);
+            setError(err.response?.data?.message || 'Login failed');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const togglePasswordVisibility = () => {
-        setShowPassword(!showPassword);
-    };
-
     return (
-        <div className="auth-container">
-            <div className="auth-wrapper">
-                <div className="auth-header">
-                    <h2>Delivery Boy Login</h2>
-                    <p>Welcome back! Please login</p>
-                </div>
+        <div className="login-background">
+            <div className="login-card">
+                <h2 className="login-title">Delivery Login</h2>
+                <p className="login-subtitle">Access your delivery dashboard</p>
 
-                <form onSubmit={handleLogin} className="auth-form">
-                    {error && <div className="error-message">{error}</div>}
+                {error && <div className="login-error">{error}</div>}
 
-                    <div className="input-group">
+                <form className="login-form" onSubmit={handleLogin}>
+                    <div className="input-wrapper">
                         <FaEnvelope className="input-icon" />
                         <input
                             type="email"
-                            placeholder="Email Address"
+                            placeholder="Email address"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="form-input"
                         />
                     </div>
 
-                    <div className="input-group">
+                    <div className="input-wrapper">
                         <FaLock className="input-icon" />
                         <input
-                            type={showPassword ? "text" : "password"}
+                            type="password"
                             placeholder="Password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
-                            className="form-input"
                         />
-                        <button
-                            type="button"
-                            className="password-toggle"
-                            onClick={togglePasswordVisibility}
-                        >
-                            {showPassword ? <FaEyeSlash /> : <FaEye />}
-                        </button>
                     </div>
 
-                    <div className="forgot-password">
-                        <Link to="/forgot-password">Forgot Password?</Link>
+                    <div className="forgot-link">
+                        <Link to="/forgot-password">Forgot password?</Link>
                     </div>
 
-                    <button
-                        type="submit"
-                        className="auth-button"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Logging In...' : 'Login'}
+                    <button type="submit" disabled={loading}>
+                        {loading ? 'Logging in...' : 'Login'}
                     </button>
-
-                    <div className="auth-footer">
-                        Don't have an account?
-                        <Link to="/signup"> Sign Up</Link>
-                    </div>
                 </form>
+
+                <div className="switch-link">
+                    Don’t have an account? <Link to="/signup">Sign up</Link>
+                </div>
             </div>
         </div>
     );

@@ -1,47 +1,53 @@
-.auth-container {
+.login-background {
+    background: linear-gradient(to right, #4a90e2, #2ecc71);
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    background-color: #f4f6f9;
-    padding: 20px;
-    animation: fadeInLogin 0.5s ease-in-out;
+    animation: fadeIn 0.6s ease-in-out;
 }
 
-.auth-wrapper {
+.login-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    padding: 40px 30px;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
     width: 100%;
-    max-width: 450px;
-    background-color: white;
-    border-radius: 15px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-    padding: 40px;
-}
-
-.auth-header {
+    max-width: 420px;
     text-align: center;
-    margin-bottom: 30px;
+    animation: slideUp 0.5s ease-out;
 }
 
-.auth-header h2 {
+.login-title {
     font-size: 26px;
     font-weight: 700;
     color: #2c3e50;
 }
 
-.auth-header p {
-    font-size: 14px;
+.login-subtitle {
     color: #7f8c8d;
-    margin-top: 5px;
+    margin-bottom: 25px;
+    font-size: 14px;
 }
 
-.auth-form {
+.login-error {
+    background-color: rgba(231, 76, 60, 0.15);
+    color: #c0392b;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    font-size: 14px;
+}
+
+.login-form {
     display: flex;
     flex-direction: column;
+    gap: 18px;
 }
 
-.input-group {
+.input-wrapper {
     position: relative;
-    margin-bottom: 20px;
 }
 
 .input-icon {
@@ -50,116 +56,98 @@
     left: 12px;
     transform: translateY(-50%);
     color: #7f8c8d;
-    font-size: 16px;
 }
 
-.form-input {
+input {
     width: 100%;
     padding: 12px 12px 12px 40px;
     border: 2px solid #e0e0e0;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 15px;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s;
 }
 
-.form-input:focus {
+input:focus {
     outline: none;
     border-color: #4a90e2;
 }
 
-.password-toggle {
-    position: absolute;
-    top: 50%;
-    right: 12px;
-    transform: translateY(-50%);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    color: #7f8c8d;
-    font-size: 16px;
-}
-
-.auth-button {
-    padding: 14px;
+button {
     background-color: #4a90e2;
     color: white;
-    font-size: 16px;
+    padding: 12px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
     cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.25s ease-in-out;
 }
 
-.auth-button:hover {
+button:hover {
     background-color: #3a7bd5;
 }
 
-.auth-button:disabled {
-    background-color: #a0a0a0;
+button:disabled {
+    background-color: #b0c4de;
     cursor: not-allowed;
 }
 
-.forgot-password {
+.forgot-link {
     text-align: right;
     font-size: 13px;
-    margin-top: -10px;
-    margin-bottom: 20px;
 }
 
-.forgot-password a {
+.forgot-link a {
     color: #4a90e2;
     text-decoration: none;
-    font-weight: 500;
 }
 
-.error-message {
-    background-color: rgba(231, 76, 60, 0.1);
-    color: #e74c3c;
+.switch-link {
     font-size: 14px;
-    padding: 12px;
-    border-radius: 6px;
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.auth-footer {
-    text-align: center;
-    font-size: 14px;
-    margin-top: 20px;
+    margin-top: 18px;
     color: #7f8c8d;
 }
 
-.auth-footer a {
+.switch-link a {
     color: #4a90e2;
     text-decoration: none;
     font-weight: 600;
-    margin-left: 5px;
 }
 
-@keyframes fadeInLogin {
+@keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(30px);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0);
     }
 }
 
-/* Responsive */
+@keyframes slideUp {
+    from {
+        transform: translateY(40px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 @media (max-width: 500px) {
-    .auth-wrapper {
+    .login-card {
         padding: 30px 20px;
     }
 
-    .auth-header h2 {
+    .login-title {
         font-size: 22px;
     }
 
-    .auth-button {
-        font-size: 15px;
+    input,
+    button {
+        font-size: 14px;
     }
 }
