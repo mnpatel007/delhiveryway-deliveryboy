@@ -43,49 +43,45 @@ const LoginPage = () => {
     };
 
     return (
-        <div className="login-container">
-            <div className="login-wrapper">
-                <div className="login-header">
+        <div className="auth-container">
+            <div className="auth-wrapper">
+                <div className="auth-header">
                     <h2>Delivery Boy Login</h2>
-                    <p>Welcome back! Please enter your credentials</p>
+                    <p>Welcome back! Please login</p>
                 </div>
 
-                <form onSubmit={handleLogin} className="login-form">
+                <form onSubmit={handleLogin} className="auth-form">
                     {error && <div className="error-message">{error}</div>}
 
-                    <div className="form-group">
-                        <div className="input-wrapper">
-                            <FaEnvelope className="input-icon" />
-                            <input
-                                type="email"
-                                placeholder="Email Address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="form-control"
-                            />
-                        </div>
+                    <div className="input-group">
+                        <FaEnvelope className="input-icon" />
+                        <input
+                            type="email"
+                            placeholder="Email Address"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            className="form-input"
+                        />
                     </div>
 
-                    <div className="form-group">
-                        <div className="input-wrapper">
-                            <FaLock className="input-icon" />
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="form-control"
-                            />
-                            <button
-                                type="button"
-                                className="password-toggle"
-                                onClick={togglePasswordVisibility}
-                            >
-                                {showPassword ? <FaEyeSlash /> : <FaEye />}
-                            </button>
-                        </div>
+                    <div className="input-group">
+                        <FaLock className="input-icon" />
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            className="form-input"
+                        />
+                        <button
+                            type="button"
+                            className="password-toggle"
+                            onClick={togglePasswordVisibility}
+                        >
+                            {showPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
                     </div>
 
                     <div className="forgot-password">
@@ -94,13 +90,13 @@ const LoginPage = () => {
 
                     <button
                         type="submit"
-                        className="login-button"
+                        className="auth-button"
                         disabled={isLoading}
                     >
                         {isLoading ? 'Logging In...' : 'Login'}
                     </button>
 
-                    <div className="signup-link">
+                    <div className="auth-footer">
                         Don't have an account?
                         <Link to="/signup"> Sign Up</Link>
                     </div>

@@ -7,11 +7,8 @@ import {
     FaEnvelope,
     FaLock,
     FaEye,
-    FaEyeSlash,
-    FaCheckCircle,
-    FaTimesCircle
+    FaEyeSlash
 } from 'react-icons/fa';
-import './SignupPage.css';
 
 const SignupPage = () => {
     const [form, setForm] = useState({
@@ -24,28 +21,9 @@ const SignupPage = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [passwordStrength, setPasswordStrength] = useState({
-        length: false,
-        uppercase: false,
-        lowercase: false,
-        number: false,
-        specialChar: false
-    });
 
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
-
-    // Password strength validation
-    useEffect(() => {
-        const { password } = form;
-        setPasswordStrength({
-            length: password.length >= 8,
-            uppercase: /[A-Z]/.test(password),
-            lowercase: /[a-z]/.test(password),
-            number: /[0-9]/.test(password),
-            specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password)
-        });
-    }, [form.password]);
 
     // Clear error when form changes
     useEffect(() => {
@@ -63,16 +41,15 @@ const SignupPage = () => {
     const handleSignup = async (e) => {
         e.preventDefault();
 
-        // Validate password match
+        // Basic validation
         if (form.password !== form.confirmPassword) {
             setError('Passwords do not match');
             return;
         }
 
-        // Check password strength
-        const isPasswordStrong = Object.values(passwordStrength).every(Boolean);
-        if (!isPasswordStrong) {
-            setError('Password does not meet strength requirements');
+        // Basic password strength check
+        if (form.password.length < 8) {
+            setError('Password must be at least 8 characters long');
             return;
         }
 
@@ -103,122 +80,90 @@ const SignupPage = () => {
     };
 
     return (
-        <div className="signup-container">
-            <div className="signup-wrapper">
-                <div className="signup-header">
+        <div className="auth-container">
+            <div className="auth-wrapper">
+                <div className="auth-header">
                     <h2>Delivery Boy Signup</h2>
-                    <p>Create your account to get started</p>
+                    <p>Create your account</p>
                 </div>
 
-                <form onSubmit={handleSignup} className="signup-form">
+                <form onSubmit={handleSignup} className="auth-form">
                     {error && <div className="error-message">{error}</div>}
 
-                    <div className="form-group">
-                        <div className="input-wrapper">
-                            <FaUser className="input-icon" />
-                            <input
-                                name="name"
-                                placeholder="Full Name"
-                                value={form.name}
-                                onChange={handleChange}
-                                required
-                                className="form-control"
-                            />
-                        </div>
+                    <div className="input-group">
+                        <FaUser className="input-icon" />
+                        <input
+                            name="name"
+                            placeholder="Full Name"
+                            value={form.name}
+                            onChange={handleChange}
+                            required
+                            className="form-input"
+                        />
                     </div>
 
-                    <div className="form-group">
-                        <div className="input-wrapper">
-                            <FaEnvelope className="input-icon" />
-                            <input
-                                type="email"
-                                name="email"
-                                placeholder="Email Address"
-                                value={form.email}
-                                onChange={handleChange}
-                                required
-                                className="form-control"
-                            />
-                        </div>
+                    <div className="input-group">
+                        <FaEnvelope className="input-icon" />
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="Email Address"
+                            value={form.email}
+                            onChange={handleChange}
+                            required
+                            className="form-input"
+                        />
                     </div>
 
-                    <div className="form-group">
-                        <div className="input-wrapper">
-                            <FaLock className="input-icon" />
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                name="password"
-                                placeholder="Password"
-                                value={form.password}
-                                onChange={handleChange}
-                                required
-                                className="form-control"
-                            />
-                            <button
-                                type="button"
-                                className="password-toggle"
-                                onClick={() => togglePasswordVisibility('password')}
-                            >
-                                {showPassword ? <FaEyeSlash /> : <FaEye />}
-                            </button>
-                        </div>
+                    <div className="input-group">
+                        <FaLock className="input-icon" />
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            placeholder="Password"
+                            value={form.password}
+                            onChange={handleChange}
+                            required
+                            className="form-input"
+                        />
+                        <button
+                            type="button"
+                            className="password-toggle"
+                            onClick={() => togglePasswordVisibility('password')}
+                        >
+                            {showPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
                     </div>
 
-                    {/* Password Strength Indicator */}
-                    <div className="password-strength">
-                        <div className={`strength-item ${passwordStrength.length ? 'valid' : ''}`}>
-                            {passwordStrength.length ? <FaCheckCircle /> : <FaTimesCircle />}
-                            At least 8 characters
-                        </div>
-                        <div className={`strength-item ${passwordStrength.uppercase ? 'valid' : ''}`}>
-                            {passwordStrength.uppercase ? <FaCheckCircle /> : <FaTimesCircle />}
-                            One uppercase letter
-                        </div>
-                        <div className={`strength-item ${passwordStrength.lowercase ? 'valid' : ''}`}>
-                            {passwordStrength.lowercase ? <FaCheckCircle /> : <FaTimesCircle />}
-                            One lowercase letter
-                        </div>
-                        <div className={`strength-item ${passwordStrength.number ? 'valid' : ''}`}>
-                            {passwordStrength.number ? <FaCheckCircle /> : <FaTimesCircle />}
-                            One number
-                        </div>
-                        <div className={`strength-item ${passwordStrength.specialChar ? 'valid' : ''}`}>
-                            {passwordStrength.specialChar ? <FaCheckCircle /> : <FaTimesCircle />}
-                            One special character
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <div className="input-wrapper">
-                            <FaLock className="input-icon" />
-                            <input
-                                type={showConfirmPassword ? "text" : "password"}
-                                name="confirmPassword"
-                                placeholder="Confirm Password"
-                                value={form.confirmPassword}
-                                onChange={handleChange}
-                                required
-                                className="form-control"
-                            />
-                            <button
-                                type="button"
-                                className="password-toggle"
-                                onClick={() => togglePasswordVisibility('confirmPassword')}
-                            >
-                                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                            </button>
-                        </div>
+                    <div className="input-group">
+                        <FaLock className="input-icon" />
+                        <input
+                            type={showConfirmPassword ? "text" : "password"}
+                            name="confirmPassword"
+                            placeholder="Confirm Password"
+                            value={form.confirmPassword}
+                            onChange={handleChange}
+                            required
+                            className="form-input"
+                        />
+                        <button
+                            type="button"
+                            className="password-toggle"
+                            onClick={() => togglePasswordVisibility('confirmPassword')}
+                        >
+                            {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
                     </div>
 
                     <button
                         type="submit"
-                        className="signup-button"
+                        className="auth-button"
                         disabled={isLoading}
                     >
                         {isLoading ? 'Creating Account...' : 'Sign Up'}
                     </button>
 
-                    <div className="login-link">
+                    <div className="auth-footer">
                         Already have an account?
                         <Link to="/login"> Login</Link>
                     </div>
