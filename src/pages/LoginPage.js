@@ -23,7 +23,9 @@ const LoginPage = () => {
                 `${process.env.REACT_APP_BACKEND_URL}/api/delivery/auth/login`,
                 { email, password }
             );
-            login(res.data);
+            login(res.data); // update context
+            localStorage.setItem('token', res.data.token); // ✅ FIX HERE
+            localStorage.setItem('user', JSON.stringify(res.data.user)); // optional
             navigate('/dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed');
@@ -31,6 +33,7 @@ const LoginPage = () => {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="login-background">
