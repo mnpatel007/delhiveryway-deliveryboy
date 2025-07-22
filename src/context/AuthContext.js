@@ -12,7 +12,9 @@ export const AuthProvider = ({ children }) => {
     const login = (userData) => {
         setDeliveryBoy(userData);
         localStorage.setItem('deliveryBoyUser', JSON.stringify(userData));
+        localStorage.setItem('token', userData.token); // ✅ CRUCIAL LINE
     };
+
 
     const logout = async () => {
         try {
