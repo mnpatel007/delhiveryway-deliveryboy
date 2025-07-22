@@ -105,20 +105,54 @@ const Dashboard = () => {
         return <Navigate to="/login" />;
     }
 
-    const handleAccept = () => {
-        setAssigned(pendingPopup);
-        setPendingPopup(null);
-        setCurrentStatus('on_delivery');
+    const handleAccept = async () => {
+        if (!pendingPopup?.orderId) return;
+        try {
+            const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/orders/${pendingPopup.orderId}/accept`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            if (res.ok) {
+                setAssigned(pendingPopup);
+                setPendingPopup(null);
+                setCurrentStatus('on_delivery');
+            } else {
+                const data = await res.json();
+                alert(data.message || 'Failed to accept delivery');
+            }
+        } catch (err) {
+            alert('Network error while accepting delivery');
+        }
     };
 
     const handleReject = () => {
         setPendingPopup(null);
     };
 
-    const handleCompleteDelivery = () => {
-        setAssigned(null);
-        setCurrentStatus('available');
-        setDirections(null);
+    const handleCompleteDelivery = async () => {
+        if (!assigned?.orderId) return;
+        try {
+            const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/orders/${assigned.orderId}/complete`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            if (res.ok) {
+                setAssigned(null);
+                setCurrentStatus('available');
+                setDirections(null);
+            } else {
+                const data = await res.json();
+                alert(data.message || 'Failed to complete delivery');
+            }
+        } catch (err) {
+            alert('Network error while completing delivery');
+        }
     };
 
     return (
