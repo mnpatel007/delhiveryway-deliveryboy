@@ -138,7 +138,10 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
                 ))}
               </ul>
 
-              <Typography mt={1}>Earnings: ₹{order.totalAmount}</Typography>
+              <Typography mt={1}>
+                Your Earnings (10%): ₹{(order.totalAmount * 0.1).toFixed(2)}
+              </Typography>
+
               <Button
                 variant="contained"
                 color="success"
