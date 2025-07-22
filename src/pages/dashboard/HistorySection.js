@@ -26,7 +26,7 @@ export default function HistorySection({ darkMode, history }) {
                 <TableCell>{row.id}</TableCell>
                 <TableCell>{row.date}</TableCell>
                 <TableCell>{row.address}</TableCell>
-                <TableCell>₹{row.earnings}</TableCell>
+                <TableCell>₹{(row.earnings * 0.1).toFixed(2)}</TableCell>
                 <TableCell><Chip label={row.status} color="success" /></TableCell>
               </TableRow>
             ))}
