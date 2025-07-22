@@ -1,46 +1,41 @@
+// client-delivery/src/dashboard/OrdersSection.js
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Paper, Stepper, Step, StepLabel, Snackbar, Alert, Switch, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { MdDeliveryDining, MdCheckCircle, MdDirectionsBike, MdLocationOn, MdCall, MdChat, MdNotificationsActive } from 'react-icons/md';
+import {
+  Box, Typography, Button, Paper, Dialog, DialogTitle,
+  DialogContent, DialogActions, Snackbar, Alert, CircularProgress
+} from '@mui/material';
+import { MdDeliveryDining, MdLocationOn, MdCheckCircle } from 'react-icons/md';
 import io from 'socket.io-client';
-
-const steps = ['Accepted', 'Picked Up', 'En Route', 'Delivered'];
 
 export default function OrdersSection({ darkMode, deliveryBoy }) {
   const [orders, setOrders] = useState([]);
-  const [activeStep, setActiveStep] = useState(0);
-  const [online, setOnline] = useState(true);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState(null);
   const [pendingAssignment, setPendingAssignment] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
-  // Fetch real assigned orders
+  const token = localStorage.getItem('token') || deliveryBoy?.token;
+
+  // 📡 Fetch assigned orders
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        let token = localStorage.getItem('token');
-        if (!token && deliveryBoy?.token) token = deliveryBoy.token;
-        if (!token) return;
         const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/assigned`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
-        if (res.ok) {
-          const data = await res.json();
-          setOrders(data);
-        } else {
-          setOrders([]);
-        }
+        const data = await res.json();
+        setOrders(data);
       } catch (err) {
+        console.error('❌ Fetch error:', err);
         setOrders([]);
       }
       setLoading(false);
     };
-    if (online) fetchOrders();
-    else setOrders([]);
-  }, [online, deliveryBoy]);
+    fetchOrders();
+  }, [deliveryBoy, token]);
 
-  // Socket setup for real-time assignments
+  // 🔌 Socket.IO setup
   useEffect(() => {
     if (!deliveryBoy?._id) return;
     const s = io(process.env.REACT_APP_BACKEND_URL);
@@ -48,134 +43,91 @@ export default function OrdersSection({ darkMode, deliveryBoy }) {
     s.emit('registerDelivery', deliveryBoy._id);
     s.on('newDeliveryAssignment', (payload) => {
       setPendingAssignment(payload);
-      setSnackbar({ open: true, message: 'New delivery assigned!', severity: 'success' });
+      setSnackbar({ open: true, message: 'New delivery request!', severity: 'success' });
     });
     return () => s.disconnect();
   }, [deliveryBoy]);
 
-  // Accept assignment
+  // ✅ Accept order
   const handleAcceptAssignment = async () => {
-    if (!pendingAssignment?.orderId) return;
     try {
-      let token = localStorage.getItem('token');
-      if (!token && deliveryBoy?.token) token = deliveryBoy.token;
-      if (!token) return;
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${pendingAssignment.orderId}/accept`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
-      if (res.ok) {
-        const data = await res.json();
-        setOrders(prev => [data.order, ...prev]);
-        setPendingAssignment(null);
-        setSnackbar({ open: true, message: 'Order accepted!', severity: 'success' });
-      } else {
-        setSnackbar({ open: true, message: 'Failed to accept order', severity: 'error' });
-      }
+      const data = await res.json();
+      setOrders(prev => [data.order, ...prev]);
+      setPendingAssignment(null);
+      setSnackbar({ open: true, message: 'Delivery accepted!', severity: 'success' });
     } catch (err) {
-      setSnackbar({ open: true, message: 'Network error', severity: 'error' });
+      console.error(err);
+      setSnackbar({ open: true, message: 'Failed to accept delivery', severity: 'error' });
     }
   };
 
-  // Step logic for the first order (for demo, real app should track per order)
-  const handleStep = async (orderId) => {
-    if (activeStep < steps.length - 1) {
-      setActiveStep(activeStep + 1);
-      setSnackbar({ open: true, message: `Status updated: ${steps[activeStep + 1]}`, severity: 'info' });
-    } else {
-      // Mark as delivered in backend
-      try {
-        let token = localStorage.getItem('token');
-        if (!token && deliveryBoy?.token) token = deliveryBoy.token;
-        if (!token) return;
-        await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${orderId}/complete`, {
-          method: 'PUT',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        setOrders(orders.filter(o => o._id !== orderId));
-        setActiveStep(0);
-        setSnackbar({ open: true, message: 'Delivery completed!', severity: 'success' });
-      } catch (err) {
-        setSnackbar({ open: true, message: 'Failed to complete delivery', severity: 'error' });
-      }
-    }
+  // ❌ Reject order
+  const handleRejectAssignment = () => {
+    setPendingAssignment(null);
+    setSnackbar({ open: true, message: 'Delivery rejected', severity: 'warning' });
   };
 
   return (
     <Box>
-      <Box display="flex" alignItems="center" mb={2}>
-        <MdNotificationsActive size={28} color={online ? '#43a047' : '#bdbdbd'} style={{ marginRight: 8 }} />
-        <Typography variant="h6">Live Orders</Typography>
-        <Box flexGrow={1} />
-        <Typography variant="body2">Online</Typography>
-        <Switch checked={online} onChange={() => setOnline(!online)} color="success" />
-      </Box>
+      <Typography variant="h6" mb={2}><MdDeliveryDining /> Live Deliveries</Typography>
+
       {loading ? (
-        <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="300px">
-          <CircularProgress />
-        </Box>
-      ) : orders.length > 0 ? (
-        orders.map((order, idx) => (
-          <Paper key={order._id} elevation={3} sx={{ p: 3, mb: 2, bgcolor: darkMode ? '#23272f' : '#fff' }}>
-            <Typography variant="subtitle1" gutterBottom>Order ID: {order._id}</Typography>
-            <Typography variant="body1"><MdLocationOn /> {order.address}</Typography>
-            <Typography variant="body2">Shop: {order.items[0]?.productId?.shopId?.name || 'N/A'}</Typography>
-            <Typography variant="body2">Shop Address: {order.items[0]?.productId?.shopId?.address || 'N/A'}</Typography>
-            <Typography variant="body2">Customer: {order.customerId?.name || 'N/A'}</Typography>
-            <Typography variant="body2">Customer Email: {order.customerId?.email || 'N/A'}</Typography>
-            <Typography variant="body2">Phone: <Button startIcon={<MdCall />} size="small">Call</Button> <Button startIcon={<MdChat />} size="small">Chat</Button></Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>Items:</Typography>
-            <ul>
-              {order.items.map((item, i) => (
-                <li key={i}>{item.quantity} x {item.productId?.name || 'N/A'}</li>
-              ))}
-            </ul>
-            <Typography variant="body2" sx={{ mt: 1 }}>Earnings: ₹{order.totalAmount || 0}</Typography>
-            <Stepper activeStep={activeStep} alternativeLabel sx={{ mt: 2, mb: 2 }}>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-            <Button variant="contained" color="primary" onClick={() => handleStep(order._id)} endIcon={<MdCheckCircle />}>
-              {activeStep < steps.length - 1 ? `Mark as ${steps[activeStep + 1]}` : 'Complete Delivery'}
-            </Button>
-          </Paper>
-        ))
+        <CircularProgress />
       ) : (
-        <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="300px">
-          <MdDeliveryDining size={64} color="#bdbdbd" />
-          <Typography variant="h6" color="textSecondary" mt={2}>No active orders</Typography>
-        </Box>
-      )}
-      {/* Assignment Dialog */}
-      <Dialog open={!!pendingAssignment} onClose={() => setPendingAssignment(null)}>
-        <DialogTitle>New Delivery Assignment</DialogTitle>
-        <DialogContent>
-          {pendingAssignment && (
-            <Box>
-              <Typography variant="subtitle1">Order ID: {pendingAssignment.orderId}</Typography>
-              <Typography variant="body2">Shop: {pendingAssignment.shopDetails?.name}</Typography>
-              <Typography variant="body2">Shop Address: {pendingAssignment.shopDetails?.location}</Typography>
-              <Typography variant="body2">Customer Address: {pendingAssignment.address}</Typography>
-              <Typography variant="body2">Earnings: ₹{pendingAssignment.earnAmount}</Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>Items:</Typography>
+        <>
+          {orders.map(order => (
+            <Paper key={order._id} sx={{ mb: 2, p: 2, bgcolor: darkMode ? '#23272f' : '#fff' }}>
+              <Typography variant="subtitle1">Order ID: {order._id}</Typography>
+              <Typography><MdLocationOn /> {order.address}</Typography>
+              <Typography variant="body2" mt={1}>Items:</Typography>
               <ul>
-                {pendingAssignment.items?.map((item, i) => (
-                  <li key={i}>{item.quantity} x {item.productId}</li>
+                {order.items.map((item, i) => (
+                  <li key={i}>{item.quantity} x {item.productId?.name || 'N/A'}</li>
                 ))}
               </ul>
-            </Box>
-          )}
+              <Typography mt={1}>Earnings: ₹{order.totalAmount}</Typography>
+              <Button
+                variant="contained"
+                color="success"
+                sx={{ mt: 2 }}
+                onClick={() => {
+                  // Add delivery completion logic if needed here
+                }}
+              >
+                Mark as Delivered
+              </Button>
+            </Paper>
+          ))}
+        </>
+      )}
+
+      {/* 📥 Incoming Assignment Modal */}
+      <Dialog open={!!pendingAssignment} onClose={() => { }}>
+        <DialogTitle>New Delivery Assignment</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="subtitle2">Shop: {pendingAssignment?.shopDetails?.name}</Typography>
+          <Typography variant="body2">Customer Address: {pendingAssignment?.address}</Typography>
+          <Typography variant="body2">Earnings: ₹{pendingAssignment?.earnAmount}</Typography>
+          <Typography variant="body2" mt={1}>Items:</Typography>
+          <ul>
+            {pendingAssignment?.items?.map((item, i) => (
+              <li key={i}>{item.quantity} x {item.name}</li>
+            ))}
+          </ul>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPendingAssignment(null)} color="secondary">Reject</Button>
-          <Button onClick={handleAcceptAssignment} color="primary" variant="contained">Accept</Button>
+          <Button onClick={handleRejectAssignment} color="error">Reject</Button>
+          <Button onClick={handleAcceptAssignment} variant="contained" color="primary">Accept</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Toast */}
       <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
           {snackbar.message}
         </Alert>
       </Snackbar>
