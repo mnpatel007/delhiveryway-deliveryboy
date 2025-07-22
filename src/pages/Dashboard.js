@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import DashboardLayout from './DashboardLayout';
 import OrdersSection from './dashboard/OrdersSection';
 import EarningsSection from './dashboard/EarningsSection';
@@ -8,24 +8,41 @@ import SupportSection from './dashboard/SupportSection';
 import { AuthContext } from '../context/AuthContext';
 
 export default function Dashboard() {
-  const { deliveryBoy, logout } = useContext(AuthContext);
-  const [currentSection, setCurrentSection] = useState('orders');
-  const [darkMode, setDarkMode] = useState(false);
+    const { deliveryBoy, logout } = useContext(AuthContext);
+    const [currentSection, setCurrentSection] = useState('orders');
+    const [darkMode, setDarkMode] = useState(false);
 
-  return (
-    <DashboardLayout
-      onSectionChange={setCurrentSection}
-      currentSection={currentSection}
-      onLogout={logout}
-      darkMode={darkMode}
-      setDarkMode={setDarkMode}
-      deliveryBoy={deliveryBoy?.deliveryBoy}
-    >
-      {currentSection === 'orders' && <OrdersSection darkMode={darkMode} deliveryBoy={deliveryBoy?.deliveryBoy} />}
-      {currentSection === 'earnings' && <EarningsSection darkMode={darkMode} deliveryBoy={deliveryBoy?.deliveryBoy} />}
-      {currentSection === 'history' && <HistorySection darkMode={darkMode} deliveryBoy={deliveryBoy?.deliveryBoy} />}
-      {currentSection === 'profile' && <ProfileSection darkMode={darkMode} deliveryBoy={deliveryBoy?.deliveryBoy} />}
-      {currentSection === 'support' && <SupportSection darkMode={darkMode} deliveryBoy={deliveryBoy?.deliveryBoy} />}
-    </DashboardLayout>
-  );
+    const [orders, setOrders] = useState([]);
+    const [history, setHistory] = useState([]);
+    const [earnings, setEarnings] = useState({ today: 0, week: 0, month: 0 });
+
+    return (
+        <DashboardLayout
+            onSectionChange={setCurrentSection}
+            currentSection={currentSection}
+            onLogout={logout}
+            darkMode={darkMode}
+            setDarkMode={setDarkMode}
+            deliveryBoy={deliveryBoy?.deliveryBoy}
+        >
+            {currentSection === 'orders' && (
+                <OrdersSection
+                    deliveryBoy={deliveryBoy?.deliveryBoy}
+                    darkMode={darkMode}
+                    orders={orders}
+                    setOrders={setOrders}
+                    setHistory={setHistory}
+                    setEarnings={setEarnings}
+                />
+            )}
+            {currentSection === 'earnings' && (
+                <EarningsSection darkMode={darkMode} earnings={earnings} />
+            )}
+            {currentSection === 'history' && (
+                <HistorySection darkMode={darkMode} history={history} />
+            )}
+            {currentSection === 'profile' && <ProfileSection darkMode={darkMode} deliveryBoy={deliveryBoy?.deliveryBoy} />}
+            {currentSection === 'support' && <SupportSection darkMode={darkMode} deliveryBoy={deliveryBoy?.deliveryBoy} />}
+        </DashboardLayout>
+    );
 }

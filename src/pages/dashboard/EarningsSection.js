@@ -2,14 +2,8 @@ import React from 'react';
 import { Box, Typography, Paper, Divider, LinearProgress } from '@mui/material';
 import { MdAttachMoney } from 'react-icons/md';
 
-export default function EarningsSection({ darkMode, deliveryBoy }) {
-  // Simulated earnings data
-  const earnings = {
-    today: 120,
-    week: 780,
-    month: 3120,
-    target: 5000,
-  };
+export default function EarningsSection({ darkMode, earnings }) {
+  const target = 5000;
 
   return (
     <Box>
@@ -25,8 +19,8 @@ export default function EarningsSection({ darkMode, deliveryBoy }) {
         <Typography variant="h5">₹{earnings.month}</Typography>
         <Divider sx={{ my: 2 }} />
         <Typography variant="subtitle2">Monthly Target</Typography>
-        <LinearProgress variant="determinate" value={earnings.month / earnings.target * 100} sx={{ height: 10, borderRadius: 5, mb: 1 }} />
-        <Typography variant="body2">₹{earnings.month} / ₹{earnings.target}</Typography>
+        <LinearProgress variant="determinate" value={(earnings.month / target) * 100} sx={{ height: 10, borderRadius: 5, mb: 1 }} />
+        <Typography variant="body2">₹{earnings.month} / ₹{target}</Typography>
       </Paper>
     </Box>
   );
