@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Paper, Stepper, Step, StepLabel, Snackbar, Alert, Switch, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Paper, Stepper, Step, StepLabel, Snackbar, Alert, Switch, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { MdDeliveryDining, MdCheckCircle, MdDirectionsBike, MdLocationOn, MdCall, MdChat, MdNotificationsActive } from 'react-icons/md';
+import io from 'socket.io-client';
 
 const steps = ['Accepted', 'Picked Up', 'En Route', 'Delivered'];
 
@@ -10,6 +11,8 @@ export default function OrdersSection({ darkMode, deliveryBoy }) {
   const [online, setOnline] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [loading, setLoading] = useState(true);
+  const [socket, setSocket] = useState(null);
+  const [pendingAssignment, setPendingAssignment] = useState(null);
 
   // Fetch real assigned orders
   useEffect(() => {
@@ -36,6 +39,49 @@ export default function OrdersSection({ darkMode, deliveryBoy }) {
     if (online) fetchOrders();
     else setOrders([]);
   }, [online, deliveryBoy]);
+
+  // Socket setup for real-time assignments
+  useEffect(() => {
+    if (!deliveryBoy?._id) return;
+    const s = io(process.env.REACT_APP_BACKEND_URL);
+    setSocket(s);
+    s.emit('registerDelivery', deliveryBoy._id);
+    s.on('newDeliveryAssignment', (payload) => {
+      setPendingAssignment(payload);
+      setSnackbar({ open: true, message: 'New delivery assigned!', severity: 'success' });
+    });
+    return () => s.disconnect();
+  }, [deliveryBoy]);
+
+  // Accept assignment
+  const handleAcceptAssignment = async () => {
+    if (!pendingAssignment?.orderId) return;
+    try {
+      let token = localStorage.getItem('token');
+      if (!token && deliveryBoy?.token) token = deliveryBoy.token;
+      if (!token) return;
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${pendingAssignment.orderId}/accept`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setPendingAssignment(null);
+        setSnackbar({ open: true, message: 'Order accepted!', severity: 'success' });
+        // Refresh assigned orders
+        const assignedRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/assigned`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (assignedRes.ok) {
+          const data = await assignedRes.json();
+          setOrders(data);
+        }
+      } else {
+        setSnackbar({ open: true, message: 'Failed to accept order', severity: 'error' });
+      }
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Network error', severity: 'error' });
+    }
+  };
 
   // Step logic for the first order (for demo, real app should track per order)
   const handleStep = async (orderId) => {
@@ -109,6 +155,31 @@ export default function OrdersSection({ darkMode, deliveryBoy }) {
           <Typography variant="h6" color="textSecondary" mt={2}>No active orders</Typography>
         </Box>
       )}
+      {/* Assignment Dialog */}
+      <Dialog open={!!pendingAssignment} onClose={() => setPendingAssignment(null)}>
+        <DialogTitle>New Delivery Assignment</DialogTitle>
+        <DialogContent>
+          {pendingAssignment && (
+            <Box>
+              <Typography variant="subtitle1">Order ID: {pendingAssignment.orderId}</Typography>
+              <Typography variant="body2">Shop: {pendingAssignment.shopDetails?.name}</Typography>
+              <Typography variant="body2">Shop Address: {pendingAssignment.shopDetails?.location}</Typography>
+              <Typography variant="body2">Customer Address: {pendingAssignment.address}</Typography>
+              <Typography variant="body2">Earnings: ₹{pendingAssignment.earnAmount}</Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>Items:</Typography>
+              <ul>
+                {pendingAssignment.items?.map((item, i) => (
+                  <li key={i}>{item.quantity} x {item.productId}</li>
+                ))}
+              </ul>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingAssignment(null)} color="secondary">Reject</Button>
+          <Button onClick={handleAcceptAssignment} color="primary" variant="contained">Accept</Button>
+        </DialogActions>
+      </Dialog>
       <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
