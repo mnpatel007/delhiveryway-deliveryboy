@@ -14,9 +14,10 @@ import {
     FaClock,
     FaPhone,
     FaUser,
-    FaMap
+    FaMapPin
 } from 'react-icons/fa';
 import { MdDeliveryDining, MdRestaurant } from 'react-icons/md';
+import { GoogleMap, LoadScript, Marker, DirectionsRenderer } from '@react-google-maps/api';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -25,6 +26,8 @@ const Dashboard = () => {
     const [pendingPopup, setPendingPopup] = useState(null);
     const [socket, setSocket] = useState(null);
     const [currentStatus, setCurrentStatus] = useState('available');
+    const [currentLocation, setCurrentLocation] = useState(null);
+    const [directions, setDirections] = useState(null);
 
     const isAuthenticatedUser = useMemo(() => {
         return isAuthenticated();
@@ -34,10 +37,31 @@ const Dashboard = () => {
         const newSocket = io(process.env.REACT_APP_BACKEND_URL);
         setSocket(newSocket);
 
+        // Get current location for tracking
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    const location = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    setCurrentLocation(location);
+                    if (newSocket && deliveryBoy?.deliveryBoy?._id) {
+                        newSocket.emit('updateLocation', {
+                            deliveryBoyId: deliveryBoy.deliveryBoy._id,
+                            location
+                        });
+                    }
+                },
+                (error) => console.error(error),
+                { enableHighAccuracy: true }
+            );
+        }
+
         return () => {
             if (newSocket) newSocket.disconnect();
         };
-    }, []);
+    }, [deliveryBoy]);
 
     useEffect(() => {
         if (!socket || !deliveryBoy) return;
@@ -57,6 +81,26 @@ const Dashboard = () => {
         };
     }, [socket, deliveryBoy, assigned]);
 
+    useEffect(() => {
+        if (assigned?.shopDetails?.location && assigned?.location) {
+            const directionsService = new window.google.maps.DirectionsService();
+            directionsService.route(
+                {
+                    origin: assigned.shopDetails.location,
+                    destination: assigned.location,
+                    travelMode: window.google.maps.TravelMode.DRIVING
+                },
+                (result, status) => {
+                    if (status === window.google.maps.DirectionsStatus.OK) {
+                        setDirections(result);
+                    } else {
+                        console.error(`error fetching directions ${result}`);
+                    }
+                }
+            );
+        }
+    }, [assigned]);
+
     if (!isAuthenticatedUser) {
         return <Navigate to="/login" />;
     }
@@ -74,11 +118,11 @@ const Dashboard = () => {
     const handleCompleteDelivery = () => {
         setAssigned(null);
         setCurrentStatus('available');
+        setDirections(null);
     };
 
     return (
         <div className="dashboard-container">
-            {/* Header */}
             <header className="dashboard-header">
                 <div className="profile-section">
                     <div className="profile-avatar">
@@ -94,7 +138,6 @@ const Dashboard = () => {
                 </button>
             </header>
 
-            {/* Status Bar */}
             <div className="status-bar">
                 <div className="status-content">
                     <MdDeliveryDining className="status-icon" />
@@ -109,7 +152,6 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Main Content */}
             <main className="dashboard-main">
                 {pendingPopup && !assigned && (
                     <div className="delivery-notification">
@@ -155,34 +197,67 @@ const Dashboard = () => {
                     <div className="active-delivery">
                         <div className="delivery-header">
                             <MdDeliveryDining className="delivery-icon" />
-                            <h3>ACTIVE DELIVERY</h3>
+                            <h3>ACTIVE DELIVERY #{assigned.orderId}</h3>
                         </div>
-                        <div className="map-placeholder">
-                            <FaMap className="map-icon" />
-                            <span>Delivery Route Map</span>
+
+                        <div className="map-container">
+                            <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+                                <GoogleMap
+                                    mapContainerStyle={{ width: '100%', height: '400px', borderRadius: '12px' }}
+                                    center={currentLocation || assigned.shopDetails.location}
+                                    zoom={13}
+                                >
+                                    {assigned.shopDetails.location && (
+                                        <Marker
+                                            position={assigned.shopDetails.location}
+                                            icon={{
+                                                url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                                            }}
+                                        />
+                                    )}
+                                    {assigned.location && (
+                                        <Marker
+                                            position={assigned.location}
+                                            icon={{
+                                                url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                                            }}
+                                        />
+                                    )}
+                                    {currentLocation && (
+                                        <Marker
+                                            position={currentLocation}
+                                            icon={{
+                                                url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                                            }}
+                                        />
+                                    )}
+                                    {directions && (
+                                        <DirectionsRenderer directions={directions} />
+                                    )}
+                                </GoogleMap>
+                            </LoadScript>
+
+                            <div className="location-info">
+                                <div className="location-card">
+                                    <FaMapPin className="icon shop" />
+                                    <div>
+                                        <h4>PICKUP LOCATION</h4>
+                                        <p>{assigned.shopDetails.name}</p>
+                                        <p>{assigned.shopDetails.address}</p>
+                                    </div>
+                                </div>
+
+                                <div className="location-card">
+                                    <FaMapPin className="icon delivery" />
+                                    <div>
+                                        <h4>DELIVERY LOCATION</h4>
+                                        <p>{assigned.address}</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+
                         <div className="delivery-details">
-                            <div className="detail-item">
-                                <FaMapMarkerAlt className="detail-icon" />
-                                <div>
-                                    <p className="detail-label">Delivery Address</p>
-                                    <p className="detail-value">{assigned.address}</p>
-                                </div>
-                            </div>
-                            <div className="detail-item">
-                                <MdRestaurant className="detail-icon" />
-                                <div>
-                                    <p className="detail-label">Shop</p>
-                                    <p className="detail-value">{assigned.shopDetails?.name}</p>
-                                </div>
-                            </div>
-                            <div className="detail-item">
-                                <FaUser className="detail-icon" />
-                                <div>
-                                    <p className="detail-label">Customer Contact</p>
-                                    <p className="detail-value">+91 XXXXX XXXXX</p>
-                                </div>
-                            </div>
                             <div className="detail-item">
                                 <FaClock className="detail-icon" />
                                 <div>
@@ -190,7 +265,15 @@ const Dashboard = () => {
                                     <p className="detail-value">15-20 mins</p>
                                 </div>
                             </div>
+                            <div className="detail-item">
+                                <FaPhone className="detail-icon" />
+                                <div>
+                                    <p className="detail-label">Customer Contact</p>
+                                    <p className="detail-value">+91 XXXXX XXXXX</p>
+                                </div>
+                            </div>
                         </div>
+
                         <div className="delivery-items">
                             <h4>DELIVERY ITEMS</h4>
                             <div className="items-list">
@@ -202,6 +285,7 @@ const Dashboard = () => {
                                 ))}
                             </div>
                         </div>
+
                         <button className="complete-button" onClick={handleCompleteDelivery}>
                             <FaCheck /> MARK AS DELIVERED
                         </button>
