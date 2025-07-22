@@ -108,7 +108,7 @@ const Dashboard = () => {
     const handleAccept = async () => {
         if (!pendingPopup?.orderId) return;
         try {
-            const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/orders/${pendingPopup.orderId}/accept`, {
+            const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${pendingPopup.orderId}/accept`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -135,7 +135,7 @@ const Dashboard = () => {
     const handleCompleteDelivery = async () => {
         if (!assigned?.orderId) return;
         try {
-            const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/orders/${assigned.orderId}/complete`, {
+            const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${assigned.orderId}/complete`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
