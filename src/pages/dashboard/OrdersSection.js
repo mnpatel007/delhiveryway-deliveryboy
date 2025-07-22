@@ -65,16 +65,21 @@ export default function OrdersSection({ darkMode, deliveryBoy }) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
+        // Optimistically add the accepted order to the orders list
+        setOrders(prev => [
+          {
+            _id: pendingAssignment.orderId,
+            address: pendingAssignment.address,
+            items: pendingAssignment.items,
+            customerId: pendingAssignment.customerId,
+            totalAmount: pendingAssignment.earnAmount,
+            shopDetails: pendingAssignment.shopDetails,
+            status: 'out for delivery',
+          },
+          ...prev
+        ]);
         setPendingAssignment(null);
         setSnackbar({ open: true, message: 'Order accepted!', severity: 'success' });
-        // Refresh assigned orders
-        const assignedRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/assigned`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (assignedRes.ok) {
-          const data = await assignedRes.json();
-          setOrders(data);
-        }
       } else {
         setSnackbar({ open: true, message: 'Failed to accept order', severity: 'error' });
       }
