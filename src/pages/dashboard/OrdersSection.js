@@ -7,7 +7,6 @@ import { MdDeliveryDining, MdLocationOn, MdCheckCircle, MdEmail, MdPerson } from
 import io from 'socket.io-client';
 
 export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders, setHistory, setEarnings }) {
-  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState(null);
   const [pendingAssignment, setPendingAssignment] = useState(null);
