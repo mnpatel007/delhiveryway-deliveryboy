@@ -65,19 +65,8 @@ export default function OrdersSection({ darkMode, deliveryBoy }) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        // Optimistically add the accepted order to the orders list
-        setOrders(prev => [
-          {
-            _id: pendingAssignment.orderId,
-            address: pendingAssignment.address,
-            items: pendingAssignment.items,
-            customerId: pendingAssignment.customerId,
-            totalAmount: pendingAssignment.earnAmount,
-            shopDetails: pendingAssignment.shopDetails,
-            status: 'out for delivery',
-          },
-          ...prev
-        ]);
+        const data = await res.json();
+        setOrders(prev => [data.order, ...prev]);
         setPendingAssignment(null);
         setSnackbar({ open: true, message: 'Order accepted!', severity: 'success' });
       } else {
