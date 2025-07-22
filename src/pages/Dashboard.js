@@ -108,11 +108,19 @@ const Dashboard = () => {
     const handleAccept = async () => {
         if (!pendingPopup?.orderId) return;
         try {
+            // Try to get token from localStorage or AuthContext
+            let token = localStorage.getItem('token');
+            if (!token && deliveryBoy?.token) token = deliveryBoy.token;
+            if (!token) {
+                alert('No authentication token found. Please log in again.');
+                logout();
+                return;
+            }
             const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${pendingPopup.orderId}/accept`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
             if (res.ok) {
@@ -122,9 +130,11 @@ const Dashboard = () => {
             } else {
                 const data = await res.json();
                 alert(data.message || 'Failed to accept delivery');
+                console.error('Accept delivery error:', data);
             }
         } catch (err) {
             alert('Network error while accepting delivery');
+            console.error('Accept delivery network error:', err);
         }
     };
 
@@ -135,11 +145,18 @@ const Dashboard = () => {
     const handleCompleteDelivery = async () => {
         if (!assigned?.orderId) return;
         try {
+            let token = localStorage.getItem('token');
+            if (!token && deliveryBoy?.token) token = deliveryBoy.token;
+            if (!token) {
+                alert('No authentication token found. Please log in again.');
+                logout();
+                return;
+            }
             const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${assigned.orderId}/complete`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
             if (res.ok) {
@@ -149,9 +166,11 @@ const Dashboard = () => {
             } else {
                 const data = await res.json();
                 alert(data.message || 'Failed to complete delivery');
+                console.error('Complete delivery error:', data);
             }
         } catch (err) {
             alert('Network error while completing delivery');
+            console.error('Complete delivery network error:', err);
         }
     };
 
