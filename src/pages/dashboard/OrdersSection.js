@@ -55,12 +55,32 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
     if (!pendingAssignment?.orderId || !token) return;
 
     try {
+      // Get delivery boy's current location
+      let deliveryBoyStartLocation = null;
+      if (navigator.geolocation) {
+        await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              deliveryBoyStartLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              };
+              resolve();
+            },
+            (error) => {
+              resolve(); // fallback: just don't send location
+            },
+            { enableHighAccuracy: true }
+          );
+        });
+      }
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${pendingAssignment.orderId}/accept`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ deliveryBoyStartLocation })
       });
 
       const data = await res.json();
