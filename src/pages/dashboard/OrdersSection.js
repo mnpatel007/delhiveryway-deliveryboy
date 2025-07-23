@@ -1,4 +1,4 @@
-// ✅ FULLY UPDATED OrdersSection.js with DEBUG LOGS + Google Maps
+// ✅ FIXED: Google Maps script load issue in OrdersSection.js
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Paper, Dialog, DialogTitle,
@@ -17,6 +17,7 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
   const [directions, setDirections] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null);
+  const [mapsLoaded, setMapsLoaded] = useState(false);
 
   const token = localStorage.getItem('token') || deliveryBoy?.token;
 
@@ -72,7 +73,7 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
   }, []);
 
   useEffect(() => {
-    if (!activeOrder || !currentLocation) return;
+    if (!activeOrder || !currentLocation || !mapsLoaded) return;
     const shopLoc = activeOrder.items[0]?.productId?.shopId?.location;
     const customerLoc = activeOrder.customerLocation;
 
@@ -97,7 +98,7 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
         if (status === 'OK') setDirections(result);
       }
     );
-  }, [mapPhase, activeOrder, currentLocation]);
+  }, [mapPhase, activeOrder, currentLocation, mapsLoaded]);
 
   const handleAcceptAssignment = async () => {
     if (!pendingAssignment?.orderId || !token) return;
@@ -204,9 +205,15 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
         })
       )}
 
-      {mapPhase && activeOrder && directions && (
-        <Box sx={{ mt: 2 }}>
-          <LoadScript googleMapsApiKey="AIzaSyBTM8risurfzxPDibLQTKHOA9DSr89S6FA">
+      <LoadScript
+        googleMapsApiKey="AIzaSyBTM8risurfzxPDibLQTKHOA9DSr89S6FA"
+        onLoad={() => {
+          console.log('✅ Google Maps API Loaded');
+          setMapsLoaded(true);
+        }}
+      >
+        {mapPhase && activeOrder && directions && (
+          <Box sx={{ mt: 2 }}>
             <GoogleMap
               mapContainerStyle={{ width: '100%', height: '400px' }}
               center={currentLocation || { lat: 20.5937, lng: 78.9629 }}
@@ -214,9 +221,9 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
             >
               <DirectionsRenderer directions={directions} />
             </GoogleMap>
-          </LoadScript>
-        </Box>
-      )}
+          </Box>
+        )}
+      </LoadScript>
 
       <Dialog open={!!pendingAssignment} onClose={() => { }}>
         <DialogTitle>New Delivery Request</DialogTitle>
