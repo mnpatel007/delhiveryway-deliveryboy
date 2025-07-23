@@ -5,7 +5,7 @@ import {
   DialogContent, DialogActions, Snackbar, Alert, CircularProgress
 } from '@mui/material';
 import { MdDeliveryDining, MdLocationOn, MdCheckCircle, MdEmail, MdPerson } from 'react-icons/md';
-import MapComponent from '../../MapComponent';
+import MapComponent from '../MapComponent';
 import io from 'socket.io-client';
 
 export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders, setHistory, setEarnings }) {
