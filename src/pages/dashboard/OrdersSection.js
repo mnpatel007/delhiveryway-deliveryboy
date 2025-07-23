@@ -142,15 +142,40 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
                 Your Earnings (10%): ₹{(order.totalAmount * 0.1).toFixed(2)}
               </Typography>
 
-              <Button
-                variant="contained"
-                color="success"
-                sx={{ mt: 2 }}
-                endIcon={<MdCheckCircle />}
-                onClick={() => handleMarkDelivered(order._id)}
-              >
-                MARK AS DELIVERED
-              </Button>
+              {order.status === 'out for delivery' && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  sx={{ mt: 2, mr: 2 }}
+                  endIcon={<MdCheckCircle />}
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${order._id}/pickup`, {
+                        method: 'PUT',
+                        headers: { Authorization: `Bearer ${token}` }
+                      });
+                      const data = await res.json();
+                      setOrders(prev => prev.map(o => o._id === order._id ? { ...o, status: 'picked up' } : o));
+                      setSnackbar({ open: true, message: 'Order marked as picked up!', severity: 'success' });
+                    } catch (err) {
+                      setSnackbar({ open: true, message: 'Failed to mark as picked up', severity: 'error' });
+                    }
+                  }}
+                >
+                  MARK AS PICKED UP
+                </Button>
+              )}
+              {order.status === 'picked up' && (
+                <Button
+                  variant="contained"
+                  color="success"
+                  sx={{ mt: 2 }}
+                  endIcon={<MdCheckCircle />}
+                  onClick={() => handleMarkDelivered(order._id)}
+                >
+                  MARK AS DELIVERED
+                </Button>
+              )}
             </Paper>
           );
         })
