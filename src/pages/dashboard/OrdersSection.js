@@ -1,4 +1,4 @@
-// ✅ FULLY UPDATED OrdersSection.js with Google Maps tracking
+// ✅ FULLY UPDATED OrdersSection.js with DEBUG LOGS + Google Maps
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Paper, Dialog, DialogTitle,
@@ -62,9 +62,10 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
           lat: position.coords.latitude,
           lng: position.coords.longitude
         };
+        console.log('📍 Current Location:', loc);
         setCurrentLocation(loc);
       },
-      (err) => console.warn('Geolocation error:', err),
+      (err) => console.warn('❌ Geolocation error:', err),
       { enableHighAccuracy: true }
     );
     return () => navigator.geolocation.clearWatch(watch);
@@ -78,6 +79,10 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
     const origin = mapPhase === 'toCustomer' ? shopLoc : currentLocation;
     const destination = mapPhase === 'toCustomer' ? customerLoc : shopLoc;
 
+    console.log('🧭 Map Phase:', mapPhase);
+    console.log('🧍 Origin:', origin);
+    console.log('🏁 Destination:', destination);
+
     if (!origin || !destination) return;
 
     const service = new window.google.maps.DirectionsService();
@@ -88,6 +93,7 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
         travelMode: window.google.maps.TravelMode.DRIVING
       },
       (result, status) => {
+        console.log('🗺️ Directions Status:', status);
         if (status === 'OK') setDirections(result);
       }
     );
