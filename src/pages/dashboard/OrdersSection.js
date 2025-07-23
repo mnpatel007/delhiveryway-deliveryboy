@@ -1,4 +1,4 @@
-// ✅ FINAL FIXED OrdersSection.js with mapPhase restore, destination bug fix, customer name/email fix
+// ✅ FULLY UPDATED OrdersSection.js — FIX: Missing details on reload
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Paper, Dialog, DialogTitle,
@@ -17,7 +17,6 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
   const [directions, setDirections] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null);
-  const [mapsLoaded, setMapsLoaded] = useState(false);
 
   const token = localStorage.getItem('token') || deliveryBoy?.token;
 
@@ -27,18 +26,10 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
       if (!token) return;
       try {
         const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/assigned`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+          headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
-        if (Array.isArray(data)) {
-          setOrders(data);
-          const savedOrderId = localStorage.getItem('activeOrderId');
-          const saved = data.find(o => o._id === savedOrderId);
-          if (saved) setActiveOrder(saved);
-        }
+        if (Array.isArray(data)) setOrders(data);
         else setOrders([]);
       } catch (err) {
         console.error(err);
@@ -64,10 +55,7 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
   useEffect(() => {
     const watch = navigator.geolocation.watchPosition(
       (position) => {
-        const loc = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
+        const loc = { lat: position.coords.latitude, lng: position.coords.longitude };
         console.log('📍 Current Location:', loc);
         setCurrentLocation(loc);
       },
@@ -78,7 +66,26 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
   }, []);
 
   useEffect(() => {
-    if (!activeOrder || !currentLocation || !mapsLoaded) return;
+    const restoreOrder = async () => {
+      const savedId = localStorage.getItem('activeOrderId');
+      if (!savedId || !token) return;
+      try {
+        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${savedId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setActiveOrder(data.order);
+      } catch (err) {
+        console.error('Failed to restore active order', err);
+      }
+    };
+    if (!activeOrder && localStorage.getItem('mapPhase')) {
+      restoreOrder();
+    }
+  }, [activeOrder, token]);
+
+  useEffect(() => {
+    if (!activeOrder || !currentLocation) return;
     const shopLoc = activeOrder.items[0]?.productId?.shopId?.location;
     const customerLoc = activeOrder.customerLocation;
 
@@ -91,19 +98,23 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
 
     if (!origin || !destination) return;
 
-    const service = new window.google.maps.DirectionsService();
-    service.route(
-      {
-        origin,
-        destination,
-        travelMode: window.google.maps.TravelMode.DRIVING
-      },
-      (result, status) => {
-        console.log('🗺️ Directions Status:', status);
-        if (status === 'OK') setDirections(result);
+    const waitUntilReady = () => {
+      if (window.google && window.google.maps) {
+        const service = new window.google.maps.DirectionsService();
+        service.route({
+          origin,
+          destination,
+          travelMode: window.google.maps.TravelMode.DRIVING
+        }, (result, status) => {
+          console.log('🗺️ Directions Status:', status);
+          if (status === 'OK') setDirections(result);
+        });
+      } else {
+        setTimeout(waitUntilReady, 200);
       }
-    );
-  }, [mapPhase, activeOrder, currentLocation, mapsLoaded]);
+    };
+    waitUntilReady();
+  }, [mapPhase, activeOrder, currentLocation]);
 
   const handleAcceptAssignment = async () => {
     if (!pendingAssignment?.orderId || !token) return;
@@ -111,10 +122,7 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
     try {
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${pendingAssignment.orderId}/accept`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ deliveryBoyStartLocation })
       });
       const data = await res.json();
@@ -142,6 +150,7 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
       setActiveOrder(data.order);
       setMapPhase('toCustomer');
       localStorage.setItem('mapPhase', 'toCustomer');
+      localStorage.setItem('activeOrderId', data.order._id);
       setSnackbar({ open: true, message: 'Order picked up!', severity: 'success' });
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to mark as picked up', severity: 'error' });
@@ -204,7 +213,6 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
                 ))}
               </ul>
               <Typography mt={1}>Your Earnings (10%): ₹{(order.totalAmount * 0.1).toFixed(2)}</Typography>
-
               {order.status === 'out for delivery' && (
                 <Button onClick={() => handleMarkPickedUp(order._id)} variant="contained" color="primary" sx={{ mt: 2 }}>Mark as Picked Up</Button>
               )}
@@ -216,15 +224,9 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
         })
       )}
 
-      <LoadScript
-        googleMapsApiKey="AIzaSyBTM8risurfzxPDibLQTKHOA9DSr89S6FA"
-        onLoad={() => {
-          console.log('✅ Google Maps API Loaded');
-          setMapsLoaded(true);
-        }}
-      >
-        {mapPhase && activeOrder && directions && (
-          <Box sx={{ mt: 2 }}>
+      {mapPhase && activeOrder && directions && (
+        <Box sx={{ mt: 2 }}>
+          <LoadScript googleMapsApiKey="AIzaSyBTM8risurfzxPDibLQTKHOA9DSr89S6FA">
             <GoogleMap
               mapContainerStyle={{ width: '100%', height: '400px' }}
               center={currentLocation || { lat: 20.5937, lng: 78.9629 }}
@@ -232,9 +234,9 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
             >
               <DirectionsRenderer directions={directions} />
             </GoogleMap>
-          </Box>
-        )}
-      </LoadScript>
+          </LoadScript>
+        </Box>
+      )}
 
       <Dialog open={!!pendingAssignment} onClose={() => { }}>
         <DialogTitle>New Delivery Request</DialogTitle>
