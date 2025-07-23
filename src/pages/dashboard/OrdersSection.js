@@ -1,4 +1,4 @@
-// ✅ FIXED: Google Maps script load issue in OrdersSection.js
+// ✅ FINAL FIXED OrdersSection.js with mapPhase restore, destination bug fix, customer name/email fix
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Paper, Dialog, DialogTitle,
@@ -13,7 +13,7 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
   const [socket, setSocket] = useState(null);
   const [pendingAssignment, setPendingAssignment] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
-  const [mapPhase, setMapPhase] = useState(null);
+  const [mapPhase, setMapPhase] = useState(localStorage.getItem('mapPhase') || null);
   const [directions, setDirections] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null);
@@ -33,7 +33,12 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
           }
         });
         const data = await res.json();
-        if (Array.isArray(data)) setOrders(data);
+        if (Array.isArray(data)) {
+          setOrders(data);
+          const savedOrderId = localStorage.getItem('activeOrderId');
+          const saved = data.find(o => o._id === savedOrderId);
+          if (saved) setActiveOrder(saved);
+        }
         else setOrders([]);
       } catch (err) {
         console.error(err);
@@ -116,6 +121,8 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
       setOrders(prev => [data.order, ...prev]);
       setActiveOrder(data.order);
       setMapPhase('toShop');
+      localStorage.setItem('mapPhase', 'toShop');
+      localStorage.setItem('activeOrderId', data.order._id);
       setPendingAssignment(null);
       setSnackbar({ open: true, message: 'Order accepted', severity: 'success' });
     } catch (err) {
@@ -132,7 +139,9 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
       });
       const data = await res.json();
       setOrders(prev => prev.map(o => o._id === orderId ? data.order : o));
+      setActiveOrder(data.order);
       setMapPhase('toCustomer');
+      localStorage.setItem('mapPhase', 'toCustomer');
       setSnackbar({ open: true, message: 'Order picked up!', severity: 'success' });
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to mark as picked up', severity: 'error' });
@@ -150,6 +159,8 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
       setMapPhase(null);
       setDirections(null);
       setActiveOrder(null);
+      localStorage.removeItem('mapPhase');
+      localStorage.removeItem('activeOrderId');
 
       const historyEntry = {
         id: data.order._id,
@@ -184,8 +195,8 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
             <Paper key={order._id} sx={{ p: 2, mb: 2, bgcolor: darkMode ? '#23272f' : '#fff' }}>
               <Typography variant="subtitle1">Order ID: {order._id}</Typography>
               <Typography><MdLocationOn /> {order.address}</Typography>
-              <Typography><MdPerson /> {order.customerId?.name}</Typography>
-              <Typography><MdEmail /> {order.customerId?.email}</Typography>
+              <Typography><MdPerson /> {order.customerId?.name || 'N/A'}</Typography>
+              <Typography><MdEmail /> {order.customerId?.email || 'N/A'}</Typography>
               <Typography variant="body2">Shop: {shop?.name || 'Unknown'} - {shop?.address || 'N/A'}</Typography>
               <ul>
                 {Array.isArray(order.items) && order.items.map((item, i) => (
