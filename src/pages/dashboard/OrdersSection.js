@@ -5,7 +5,7 @@ import {
   DialogContent, DialogActions, Snackbar, Alert, CircularProgress
 } from '@mui/material';
 import { MdDeliveryDining, MdLocationOn, MdCheckCircle, MdEmail, MdPerson } from 'react-icons/md';
-import { GoogleMap, LoadScript, DirectionsRenderer } from '@react-google-maps/api';
+import MapComponent from '../../MapComponent';
 import io from 'socket.io-client';
 
 export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders, setHistory, setEarnings }) {
@@ -224,17 +224,13 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
         })
       )}
 
-      {mapPhase && activeOrder && directions && (
+      {mapPhase && activeOrder && (
         <Box sx={{ mt: 2 }}>
-          <LoadScript googleMapsApiKey="AIzaSyBTM8risurfzxPDibLQTKHOA9DSr89S6FA">
-            <GoogleMap
-              mapContainerStyle={{ width: '100%', height: '400px' }}
-              center={currentLocation || { lat: 20.5937, lng: 78.9629 }}
-              zoom={13}
-            >
-              <DirectionsRenderer directions={directions} />
-            </GoogleMap>
-          </LoadScript>
+          <MapComponent
+            shopLocation={activeOrder.items[0]?.productId?.shopId?.location}
+            deliveryLocation={activeOrder.customerLocation}
+            currentLocation={currentLocation}
+          />
         </Box>
       )}
 
