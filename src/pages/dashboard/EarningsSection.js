@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, Paper, Divider, LinearProgress } from '@mui/material';
 import { MdAttachMoney } from 'react-icons/md';
 
-export default function EarningsSection({ darkMode, earnings }) {
+export default React.memo(function EarningsSection({ darkMode, earnings }) { // Added React.memo
   const target = 5000;
 
   return (
@@ -33,4 +33,5 @@ export default function EarningsSection({ darkMode, earnings }) {
       </Paper>
     </Box>
   );
-}
+}); // Added React.memo
+

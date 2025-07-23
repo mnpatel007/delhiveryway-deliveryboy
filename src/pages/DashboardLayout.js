@@ -58,3 +58,4 @@ export default function DashboardLayout({ children, onSectionChange, currentSect
     </Box>
   );
 }
+

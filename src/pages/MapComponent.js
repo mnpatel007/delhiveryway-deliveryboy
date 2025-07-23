@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import './MapComponent.css';
 
-const MapComponent = ({ shopLocation, deliveryLocation, currentLocation }) => {
+export default React.memo(function MapComponent({ shopLocation, deliveryLocation, currentLocation }) { // Added React.memo
     const mapRef = useRef(null);
     const mapInstance = useRef(null);
     const markers = useRef([]);
@@ -63,6 +63,10 @@ const MapComponent = ({ shopLocation, deliveryLocation, currentLocation }) => {
             // Clean up markers
             markers.current.forEach(marker => marker.setMap(null));
             markers.current = [];
+            // Clear directions
+            if (directionsRenderer.current) {
+                directionsRenderer.current.setMap(null);
+            }
         };
     }, [shopLocation, deliveryLocation]);
 
@@ -111,6 +115,5 @@ const MapComponent = ({ shopLocation, deliveryLocation, currentLocation }) => {
     };
 
     return <div ref={mapRef} className="map" />;
-};
+}); // Added React.memo
 
-export default MapComponent;

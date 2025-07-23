@@ -1,5 +1,5 @@
 // ✅ FULLY UPDATED OrdersSection.js — FIX: Missing details on reload
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import {
   Box, Typography, Button, Paper, Dialog, DialogTitle,
   DialogContent, DialogActions, Snackbar, Alert, CircularProgress
@@ -8,7 +8,7 @@ import { MdDeliveryDining, MdLocationOn, MdCheckCircle, MdEmail, MdPerson } from
 import MapComponent from '../MapComponent';
 import io from 'socket.io-client';
 
-export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders, setHistory, setEarnings }) {
+export default React.memo(function OrdersSection({ darkMode, deliveryBoy, orders, setOrders, setHistory, setEarnings }) { // Added React.memo
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState(null);
   const [pendingAssignment, setPendingAssignment] = useState(null);
@@ -34,11 +34,12 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
       } catch (err) {
         console.error(err);
         setOrders([]);
+        setSnackbar({ open: true, message: 'Failed to fetch orders.', severity: 'error' }); // User feedback
       }
       setLoading(false);
     };
     fetchOrders();
-  }, [token]);
+  }, [token, setOrders]); // Added setOrders to dependency array
 
   useEffect(() => {
     if (!deliveryBoy?._id || !token) return;
@@ -59,7 +60,10 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
         console.log('📍 Current Location:', loc);
         setCurrentLocation(loc);
       },
-      (err) => console.warn('❌ Geolocation error:', err),
+      (err) => {
+        console.warn('❌ Geolocation error:', err);
+        setSnackbar({ open: true, message: 'Unable to get current location. Please enable location services.', severity: 'warning' }); // User feedback
+      },
       { enableHighAccuracy: true }
     );
     return () => navigator.geolocation.clearWatch(watch);
@@ -77,6 +81,10 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
         setActiveOrder(data.order);
       } catch (err) {
         console.error('Failed to restore active order', err);
+        setSnackbar({ open: true, message: 'Failed to restore active order.', severity: 'error' }); // User feedback
+        localStorage.removeItem('activeOrderId'); // Clear invalid saved ID
+        localStorage.removeItem('mapPhase'); // Clear invalid map phase
+        setMapPhase(null);
       }
     };
     if (!activeOrder && localStorage.getItem('mapPhase')) {
@@ -108,6 +116,7 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
         }, (result, status) => {
           console.log('🗺️ Directions Status:', status);
           if (status === 'OK') setDirections(result);
+          else setSnackbar({ open: true, message: `Failed to get directions: ${status}`, severity: 'error' }); // User feedback
         });
       } else {
         setTimeout(waitUntilReady, 200);
@@ -116,7 +125,7 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
     waitUntilReady();
   }, [mapPhase, activeOrder, currentLocation]);
 
-  const handleAcceptAssignment = async () => {
+  const handleAcceptAssignment = useCallback(async () => { // Added useCallback
     if (!pendingAssignment?.orderId || !token) return;
     let deliveryBoyStartLocation = currentLocation;
     try {
@@ -135,11 +144,11 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
       setSnackbar({ open: true, message: 'Order accepted', severity: 'success' });
     } catch (err) {
       console.error(err);
-      setSnackbar({ open: true, message: 'Failed to accept', severity: 'error' });
+      setSnackbar({ open: true, message: 'Failed to accept order. Please try again.', severity: 'error' }); // User feedback
     }
-  };
+  }, [pendingAssignment, token, currentLocation, setOrders]); // Added dependencies
 
-  const handleMarkPickedUp = async (orderId) => {
+  const handleMarkPickedUp = useCallback(async (orderId) => { // Added useCallback
     try {
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${orderId}/pickup`, {
         method: 'PUT',
@@ -153,11 +162,12 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
       localStorage.setItem('activeOrderId', data.order._id);
       setSnackbar({ open: true, message: 'Order picked up!', severity: 'success' });
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to mark as picked up', severity: 'error' });
+      console.error(err);
+      setSnackbar({ open: true, message: 'Failed to mark as picked up. Please try again.', severity: 'error' }); // User feedback
     }
-  };
+  }, [token, setOrders]); // Added dependencies
 
-  const handleMarkDelivered = async (orderId) => {
+  const handleMarkDelivered = useCallback(async (orderId) => { // Added useCallback
     try {
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${orderId}/complete`, {
         method: 'PUT',
@@ -180,16 +190,16 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
       };
       setHistory(prev => [historyEntry, ...prev]);
       setEarnings(prev => ({
-        today: prev.today + data.order.totalAmount,
-        week: prev.week + data.order.totalAmount,
-        month: prev.month + data.order.totalAmount
+        today: prev.today + (data.order.totalAmount * 0.1), // Earnings calculation moved here for consistency
+        week: prev.week + (data.order.totalAmount * 0.1),
+        month: prev.month + (data.order.totalAmount * 0.1)
       }));
       setSnackbar({ open: true, message: 'Order delivered!', severity: 'success' });
     } catch (err) {
       console.error(err);
-      setSnackbar({ open: true, message: 'Failed to deliver order', severity: 'error' });
+      setSnackbar({ open: true, message: 'Failed to deliver order. Please try again.', severity: 'error' }); // User feedback
     }
-  };
+  }, [token, setOrders, setHistory, setEarnings]); // Added dependencies
 
   return (
     <Box>
@@ -198,30 +208,38 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
       {loading ? (
         <CircularProgress />
       ) : (
-        orders.map((order) => {
-          const shop = order.items[0]?.productId?.shopId;
-          return (
-            <Paper key={order._id} sx={{ p: 2, mb: 2, bgcolor: darkMode ? '#23272f' : '#fff' }}>
-              <Typography variant="subtitle1">Order ID: {order._id}</Typography>
-              <Typography><MdLocationOn /> {order.address}</Typography>
-              <Typography><MdPerson /> {order.customerId?.name || 'N/A'}</Typography>
-              <Typography><MdEmail /> {order.customerId?.email || 'N/A'}</Typography>
-              <Typography variant="body2">Shop: {shop?.name || 'Unknown'} - {shop?.address || 'N/A'}</Typography>
-              <ul>
-                {Array.isArray(order.items) && order.items.map((item, i) => (
-                  <li key={i}>{item.quantity} x {item.productId?.name || 'N/A'}</li>
-                ))}
-              </ul>
-              <Typography mt={1}>Your Earnings (10%): ₹{(order.totalAmount * 0.1).toFixed(2)}</Typography>
-              {order.status === 'out for delivery' && (
-                <Button onClick={() => handleMarkPickedUp(order._id)} variant="contained" color="primary" sx={{ mt: 2 }}>Mark as Picked Up</Button>
-              )}
-              {order.status === 'picked up' && (
-                <Button onClick={() => handleMarkDelivered(order._id)} variant="contained" color="success" sx={{ mt: 2 }}>Mark as Delivered</Button>
-              )}
-            </Paper>
-          );
-        })
+        orders.length > 0 ? ( // Added check for empty orders
+          orders.map((order) => {
+            const shop = order.items[0]?.productId?.shopId;
+            return (
+              <Paper key={order._id} sx={{ p: 2, mb: 2, bgcolor: darkMode ? '#23272f' : '#fff' }}>
+                <Typography variant="subtitle1">Order ID: {order._id}</Typography>
+                <Typography><MdLocationOn /> {order.address}</Typography>
+                <Typography><MdPerson /> {order.customerId?.name || 'N/A'}</Typography>
+                <Typography><MdEmail /> {order.customerId?.email || 'N/A'}</Typography>
+                <Typography variant="body2">Shop: {shop?.name || 'Unknown'} - {shop?.address || 'N/A'}</Typography>
+                <ul>
+                  {Array.isArray(order.items) && order.items.map((item, i) => (
+                    <li key={i}>{item.quantity} x {item.productId?.name || 'N/A'}</li>
+                  ))}
+                </ul>
+                <Typography mt={1}>Your Earnings (10%): ₹{(order.totalAmount * 0.1).toFixed(2)}</Typography>
+                {order.status === 'out for delivery' && (
+                  <Button onClick={() => handleMarkPickedUp(order._id)} variant="contained" color="primary" sx={{ mt: 2 }}>Mark as Picked Up</Button>
+                )}
+                {order.status === 'picked up' && (
+                  <Button onClick={() => handleMarkDelivered(order._id)} variant="contained" color="success" sx={{ mt: 2 }}>Mark as Delivered</Button>
+                )}
+              </Paper>
+            );
+          })
+        ) : (
+          <Paper sx={{ p: 2, mb: 2, bgcolor: darkMode ? '#23272f' : '#fff', textAlign: 'center' }}>
+            <Typography variant="subtitle1" color="textSecondary" sx={{ py: 4 }}>
+              No active deliveries at the moment.
+            </Typography>
+          </Paper>
+        )
       )}
 
       {mapPhase && activeOrder && (
@@ -257,4 +275,5 @@ export default function OrdersSection({ darkMode, deliveryBoy, orders, setOrders
       </Snackbar>
     </Box>
   );
-}
+}); // Added React.memo
+

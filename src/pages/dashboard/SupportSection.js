@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, Paper, Button, Divider } from '@mui/material';
 import { MdHelp, MdChat, MdCall } from 'react-icons/md';
 
-export default function SupportSection({ darkMode }) {
+export default React.memo(function SupportSection({ darkMode }) { // Added React.memo
   return (
     <Box>
       <Typography variant="h6" mb={2}><MdHelp /> Support & Help</Typography>
@@ -19,4 +19,5 @@ export default function SupportSection({ darkMode }) {
       </Paper>
     </Box>
   );
-}
+}); // Added React.memo
+

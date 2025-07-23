@@ -23,9 +23,9 @@ const LoginPage = () => {
                 `${process.env.REACT_APP_BACKEND_URL}/api/delivery/auth/login`,
                 { email, password }
             );
-            login(res.data); // update context
-            localStorage.setItem('token', res.data.token); // ✅ FIX HERE
-            localStorage.setItem('user', JSON.stringify(res.data.user)); // optional
+            login(res.data); // update context, which already sets token in localStorage
+            // localStorage.setItem('token', res.data.token); // REMOVED: Redundant, AuthContext handles this
+            localStorage.setItem('user', JSON.stringify(res.data.user)); // optional, if 'user' is needed elsewhere
             navigate('/dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed');
@@ -84,3 +84,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+

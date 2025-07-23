@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Typography, Paper, TextField, Button, Avatar, Divider, Snackbar, Alert } from '@mui/material';
 import { MdPerson, MdEdit, MdLock, MdCloudUpload } from 'react-icons/md';
 
-export default function ProfileSection({ darkMode, deliveryBoy }) {
+export default React.memo(function ProfileSection({ darkMode, deliveryBoy }) { // Added React.memo
   const [edit, setEdit] = useState(false);
   const [name, setName] = useState(deliveryBoy?.name || '');
   const [email] = useState(deliveryBoy?.email || '');
@@ -40,4 +40,5 @@ export default function ProfileSection({ darkMode, deliveryBoy }) {
       </Snackbar>
     </Box>
   );
-}
+}); // Added React.memo
+
