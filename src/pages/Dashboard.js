@@ -1,4 +1,4 @@
-import React, { useContext, useState, useCallback } from 'react';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
 import DashboardLayout from './DashboardLayout';
 import OrdersSection from './dashboard/OrdersSection';
 import EarningsSection from './dashboard/EarningsSection';
@@ -12,88 +12,46 @@ export default function Dashboard() {
     const [currentSection, setCurrentSection] = useState('orders');
     const [darkMode, setDarkMode] = useState(false);
 
-    const [orders, setOrders] = useState([]);
-    const [history, setHistory] = useState([]);
+    /* ---- earnings & history now come from DeliveryRecord ---- */
     const [earnings, setEarnings] = useState({ today: 0, week: 0, month: 0 });
+    const [history, setHistory] = useState([]);
 
-    // Utility to calculate earnings from orders
-    const calculateEarningsFromOrders = useCallback((deliveredOrders) => {
-        let today = 0, week = 0, month = 0;
-        const now = new Date();
-        deliveredOrders.forEach(order => {
-            // Ensure the order has a valid date and earnings
-            if (!order.date || typeof order.earnings !== 'number') return;
+    const token = localStorage.getItem('token');
 
-            const orderDate = new Date(order.date);
-            const earning = order.earnings; // This 'earnings' is already 10% of totalAmount
+    /* fetch earnings & history from /api/delivery/my-deliveries */
+    const fetchStats = useCallback(async () => {
+        if (!token) return;
+        try {
+            const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/delivery/my-deliveries`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            /* flat ₹30 per delivery */
+            const delivered = data.filter(d => d.status === 'delivered');
+            setHistory(delivered);
 
-            // Today
-            if (
-                orderDate.getDate() === now.getDate() &&
-                orderDate.getMonth() === now.getMonth() &&
-                orderDate.getFullYear() === now.getFullYear()
-            ) {
-                today += earning;
-            }
-            // Week: last 7 days (rolling window)
-            const diffTime = now.getTime() - orderDate.getTime(); // Difference in milliseconds
-            const diffDays = diffTime / (1000 * 60 * 60 * 24); // Convert to days
-            if (diffDays >= 0 && diffDays <= 7) { // Check for orders within the last 7 days including today
-                week += earning;
-            }
-            // Month: this month
-            if (
-                orderDate.getMonth() === now.getMonth() &&
-                orderDate.getFullYear() === now.getFullYear()
-            ) {
-                month += earning;
-            }
-        });
-        return { today, week, month };
-    }, []);
-
-    // Fetch delivery history (delivered orders)
-    React.useEffect(() => {
-        async function fetchHistory() {
-            let token = localStorage.getItem('token');
-            if (!token && deliveryBoy?.token) token = deliveryBoy.token;
-            if (!token) return;
-            try {
-                const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/assigned`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    const delivered = data.filter(order => order.status === 'delivered').map(order => ({
-                        id: order._id,
-                        date: new Date(order.updatedAt).toISOString().split('T')[0], // Use updatedAt for delivery date
-                        address: order.customerLocation?.address || 'N/A', // Use customerLocation address
-                        earnings: order.totalAmount * 0.1, // Calculate earnings here consistently
-                        status: 'Delivered'
-                    }));
-                    setHistory(delivered);
-                    setEarnings(calculateEarningsFromOrders(delivered));
-                } else {
-                    console.error('Failed to fetch history:', res.status, res.statusText);
-                }
-            } catch (error) {
-                console.error('Error fetching history:', error);
-            }
+            /* calculate */
+            const now = new Date();
+            let today = 0, week = 0, month = 0;
+            delivered.forEach(d => {
+                const ts = new Date(d.deliveredAt);
+                if (ts.toDateString() === now.toDateString()) today += 30;
+                if ((now - ts) / (1000 * 60 * 60 * 24) <= 7) week += 30;
+                if (ts.getMonth() === now.getMonth() && ts.getFullYear() === now.getFullYear()) month += 30;
+            });
+            setEarnings({ today, week, month });
+        } catch (e) {
+            console.error(e);
         }
-        fetchHistory();
-    }, [deliveryBoy, calculateEarningsFromOrders]); // Removed setHistory, setEarnings from dependencies as they are updated inside
+    }, [token]);
 
-    const handleSectionChange = useCallback((section) => {
-        setCurrentSection(section);
-    }, []);
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
 
-    const handleSetDarkMode = useCallback((mode) => {
-        setDarkMode(mode);
-    }, []);
-
-    const handleLogout = useCallback(() => {
-        logout();
-    }, [logout]);
+    const handleSectionChange = useCallback(sec => setCurrentSection(sec), []);
+    const handleSetDarkMode = useCallback(mode => setDarkMode(mode), []);
+    const handleLogout = useCallback(() => logout(), [logout]);
 
     return (
         <DashboardLayout
@@ -108,10 +66,7 @@ export default function Dashboard() {
                 <OrdersSection
                     deliveryBoy={deliveryBoy?.deliveryBoy}
                     darkMode={darkMode}
-                    orders={orders}
-                    setOrders={setOrders}
-                    setHistory={setHistory}
-                    setEarnings={setEarnings}
+                    onDelivered={fetchStats}
                 />
             )}
             {currentSection === 'earnings' && (
@@ -120,8 +75,10 @@ export default function Dashboard() {
             {currentSection === 'history' && (
                 <HistorySection darkMode={darkMode} history={history} />
             )}
-            {currentSection === 'profile' && <ProfileSection darkMode={darkMode} deliveryBoy={deliveryBoy?.deliveryBoy} />}
-            {currentSection === 'support' && <SupportSection darkMode={darkMode} deliveryBoy={deliveryBoy?.deliveryBoy} />}
+            {currentSection === 'profile' && (
+                <ProfileSection darkMode={darkMode} deliveryBoy={deliveryBoy?.deliveryBoy} />
+            )}
+            {currentSection === 'support' && <SupportSection darkMode={darkMode} />}
         </DashboardLayout>
     );
 }

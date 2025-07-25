@@ -58,6 +58,13 @@
     color: #2ecc71;
 }
 
+.map {
+    height: 400px;
+    width: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
 @media (max-width: 768px) {
     .map {
         height: 300px;

@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, CssBaseline, Drawer, AppBar, Toolbar, Typography, List, ListItem, ListItemIcon, ListItemText, IconButton, Divider, Avatar, Switch } from '@mui/material';
 import { MdDeliveryDining, MdHistory, MdAttachMoney, MdPerson, MdHelp, MdLogout, MdDarkMode, MdLightMode } from 'react-icons/md';
 import { useState } from 'react';
+import '../styles/glass.css';
 
 const drawerWidth = 240;
 

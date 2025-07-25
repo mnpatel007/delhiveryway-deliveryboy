@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import { MdHistory } from 'react-icons/md';
 
-export default React.memo(function HistorySection({ darkMode, history }) { // Added React.memo
+export default React.memo(function HistorySection({ darkMode, history }) {
   return (
     <Box>
       <Typography variant="h6" mb={2}><MdHistory /> Delivery History</Typography>
@@ -16,27 +16,25 @@ export default React.memo(function HistorySection({ darkMode, history }) { // Ad
               <TableCell>Order ID</TableCell>
               <TableCell>Date</TableCell>
               <TableCell>Address</TableCell>
-              <TableCell>Earnings</TableCell>
+              <TableCell>Earning</TableCell>
               <TableCell>Status</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {history.length > 0 ? ( // Added check for empty history
-              history.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>{row.id}</TableCell>
-                  <TableCell>{row.date}</TableCell>
-                  <TableCell>{row.address}</TableCell>
-                  <TableCell>₹{(row.earnings * 0.1).toFixed(2)}</TableCell>
-                  <TableCell><Chip label={row.status} color="success" /></TableCell>
+            {history.length ? (
+              history.map(row => (
+                <TableRow key={row._id}>
+                  <TableCell>{row.orderId._id}</TableCell>
+                  <TableCell>{new Date(row.deliveredAt).toLocaleDateString()}</TableCell>
+                  <TableCell>{row.customerLocation.address}</TableCell>
+                  <TableCell>₹30.00</TableCell>
+                  <TableCell><Chip label="Delivered" color="success" /></TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
                 <TableCell colSpan={5} align="center">
-                  <Typography variant="subtitle1" color="textSecondary" sx={{ py: 4 }}>
-                    No delivery history found.
-                  </Typography>
+                  <Typography sx={{ py: 4 }} color="textSecondary">No history yet</Typography>
                 </TableCell>
               </TableRow>
             )}
@@ -45,5 +43,4 @@ export default React.memo(function HistorySection({ darkMode, history }) { // Ad
       </TableContainer>
     </Box>
   );
-}); // Added React.memo
-
+});
