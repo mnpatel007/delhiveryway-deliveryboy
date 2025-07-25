@@ -121,10 +121,16 @@ export default React.memo(function OrdersSection({ darkMode, deliveryBoy, onDeli
             <Typography><MdPerson /> {o.customerId.name}</Typography>
             <Typography><MdEmail /> {o.customerId.email}</Typography>
             {o.status === 'accepted' && (
-              <Button onClick={() => handlePickup(o.orderId._id)} variant="contained" sx={{ mt: 1 }}>Mark Picked Up</Button>
+              <>
+                <Typography sx={{ color: 'orange', fontWeight: 500, mb: 1 }}>Status: Assigned Delivery Driver</Typography>
+                <Button onClick={() => handlePickup(o.orderId._id)} variant="contained" sx={{ mt: 1 }}>Mark Picked Up</Button>
+              </>
             )}
             {o.status === 'pickedUp' && (
-              <Button onClick={() => handleDeliver(o.orderId._id)} variant="contained" color="success" sx={{ mt: 1 }}>Mark Delivered</Button>
+              <>
+                <Typography sx={{ color: 'green', fontWeight: 500, mb: 1 }}>Status: Picked Up</Typography>
+                <Button onClick={() => handleDeliver(o.orderId._id)} variant="contained" color="success" sx={{ mt: 1 }}>Mark Delivered</Button>
+              </>
             )}
           </Paper>
         ))
