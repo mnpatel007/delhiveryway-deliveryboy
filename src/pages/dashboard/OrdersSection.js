@@ -54,16 +54,8 @@ export default React.memo(function OrdersSection({ darkMode, deliveryBoy, onDeli
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         customerId: pendingAssignment.customerId,
-        shopLocation: {
-          address: pendingAssignment.shopDetails.address,
-          lat: pendingAssignment.shopDetails.location.lat,
-          lng: pendingAssignment.shopDetails.location.lng
-        },
-        customerLocation: {
-          address: pendingAssignment.address,
-          lat: pendingAssignment.customerLocation.lat,
-          lng: pendingAssignment.customerLocation.lng
-        }
+        shopLocation: pendingAssignment.shopDetails.location,
+        customerLocation: pendingAssignment.address
       })
     });
     setPendingAssignment(null);
