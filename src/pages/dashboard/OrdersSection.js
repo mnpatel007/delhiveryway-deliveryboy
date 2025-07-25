@@ -49,19 +49,45 @@ export default React.memo(function OrdersSection({ darkMode, deliveryBoy, onDeli
   /* accept */
   const handleAccept = useCallback(async () => {
     if (!pendingAssignment || !token) return;
-    await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/delivery/accept/${pendingAssignment.orderId}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        customerId: pendingAssignment.customerId,
-        shopLocation: pendingAssignment.shopDetails.location,
-        customerLocation: pendingAssignment.address
-      })
-    });
-    setPendingAssignment(null);
-    fetchAssigned();
-    setSnackbar({ open: true, message: 'Order accepted', severity: 'success' });
+
+    // safe destructuring with fallbacks
+    const shopLoc = pendingAssignment.shopDetails?.location || {};
+    const custLoc = pendingAssignment.customerLocation || {};
+
+    try {
+      await fetch(
+        `${process.env.REACT_APP_BACKEND_URL}/api/delivery/accept/${pendingAssignment.orderId}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            customerId: pendingAssignment.customerId,
+            shopLocation: {
+              address: pendingAssignment.shopDetails?.address || 'Unknown',
+              lat: shopLoc.lat || 0,
+              lng: shopLoc.lng || 0
+            },
+            customerLocation: {
+              address: custLoc.address || pendingAssignment.address || 'Unknown',
+              lat: custLoc.lat || 0,
+              lng: custLoc.lng || 0
+            }
+          })
+        }
+      );
+
+      setPendingAssignment(null);
+      fetchAssigned();
+      setSnackbar({ open: true, message: 'Order accepted', severity: 'success' });
+    } catch (err) {
+      console.error('Accept failed', err);
+      setSnackbar({ open: true, message: 'Failed to accept', severity: 'error' });
+    }
   }, [pendingAssignment, token, fetchAssigned]);
+
 
   /* pick-up */
   const handlePickup = async orderId => {
