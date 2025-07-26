@@ -1,45 +1,59 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { SocketContext } from '../context/SocketContext';
 import { DeliveryContext } from '../context/DeliveryContext';
+import NotificationToast from './NotificationToast';
 import './NotificationHandler.css';
 
 const NotificationHandler = () => {
-    const { notifications, removeNotification, requestNotificationPermission } = useContext(SocketContext);
+    const { notifications, requestNotificationPermission } = useContext(SocketContext);
     const { refreshData } = useContext(DeliveryContext);
     const [toastNotifications, setToastNotifications] = useState([]);
+    const [processedNotifications, setProcessedNotifications] = useState(new Set());
 
     // Request notification permission on mount
     useEffect(() => {
         requestNotificationPermission();
-    }, []);
+    }, [requestNotificationPermission]);
 
-    // Handle new notifications
+    // Handle new notifications with better deduplication
     useEffect(() => {
         if (notifications.length > 0) {
-            const latestNotification = notifications[0];
+            notifications.forEach(notification => {
+                const notificationKey = `${notification.id}_${notification.message}_${notification.title}`;
 
-            // Add to toast notifications
-            setToastNotifications(prev => [
-                {
-                    ...latestNotification,
-                    toastId: Date.now()
-                },
-                ...prev.slice(0, 4) // Keep max 5 toast notifications
-            ]);
+                // Skip if already processed
+                if (processedNotifications.has(notificationKey)) {
+                    return;
+                }
 
-            // Auto-remove toast after 5 seconds
-            setTimeout(() => {
-                setToastNotifications(prev =>
-                    prev.filter(toast => toast.toastId !== latestNotification.toastId)
-                );
-            }, 5000);
+                // Mark as processed
+                setProcessedNotifications(prev => new Set([...prev, notificationKey]));
 
-            // Refresh data for certain notification types
-            if (['new_order', 'status_update', 'order_cancelled'].includes(latestNotification.type)) {
-                refreshData();
-            }
+                const toastId = `toast_${Date.now()}_${Math.random()}`;
+
+                // Add to toast notifications
+                setToastNotifications(prev => [
+                    {
+                        ...notification,
+                        toastId
+                    },
+                    ...prev.slice(0, 4) // Keep max 5 toast notifications
+                ]);
+
+                // Auto-remove toast after 5 seconds
+                setTimeout(() => {
+                    setToastNotifications(prev =>
+                        prev.filter(toast => toast.toastId !== toastId)
+                    );
+                }, 5000);
+
+                // Refresh data for certain notification types
+                if (['new_order', 'status_update', 'order_cancelled'].includes(notification.type)) {
+                    refreshData();
+                }
+            });
         }
-    }, [notifications, refreshData]);
+    }, [notifications, refreshData, processedNotifications]);
 
     const handleToastClick = (notification) => {
         // Handle different notification types
@@ -105,29 +119,12 @@ const NotificationHandler = () => {
             {/* Toast Notifications */}
             <div className="toast-container">
                 {toastNotifications.map((notification) => (
-                    <div
+                    <NotificationToast
                         key={notification.toastId}
-                        className={`toast-notification ${notification.type}`}
-                        style={{ borderLeftColor: getNotificationColor(notification.type) }}
-                        onClick={() => handleToastClick(notification)}
-                    >
-                        <div className="toast-icon">
-                            {getNotificationIcon(notification.type)}
-                        </div>
-                        <div className="toast-content">
-                            <div className="toast-title">{notification.title}</div>
-                            <div className="toast-message">{notification.message}</div>
-                        </div>
-                        <button
-                            className="toast-close"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                removeToast(notification.toastId);
-                            }}
-                        >
-                            ✕
-                        </button>
-                    </div>
+                        notification={notification}
+                        onClose={removeToast}
+                        onAction={handleToastClick}
+                    />
                 ))}
             </div>
         </div>

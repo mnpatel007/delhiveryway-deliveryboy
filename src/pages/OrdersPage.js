@@ -12,6 +12,7 @@ export default function OrdersPage() {
         loading,
         error,
         acceptOrder,
+        declineOrder,
         markPickedUp,
         markDelivered,
         refreshData
@@ -37,6 +38,21 @@ export default function OrdersPage() {
 
         if (result.success) {
             setActiveTab('active');
+        }
+    };
+
+    const handleDeclineOrder = async (orderId) => {
+        const reason = prompt('Please provide a reason for declining this order:', 'Unable to reach location');
+        if (!reason) return;
+
+        setProcessingOrder(orderId);
+        const result = await declineOrder(orderId, reason);
+        setProcessingOrder(null);
+
+        if (result.success) {
+            alert('Order declined successfully');
+        } else {
+            alert(result.message);
         }
     };
 
@@ -189,7 +205,7 @@ export default function OrdersPage() {
 
                                             <div className="order-actions">
                                                 <button
-                                                    className="btn btn-success btn-full"
+                                                    className="btn btn-success btn-half"
                                                     onClick={() => handleAcceptOrder(order._id)}
                                                     disabled={processingOrder === order._id}
                                                 >
@@ -199,7 +215,21 @@ export default function OrdersPage() {
                                                             Accepting...
                                                         </>
                                                     ) : (
-                                                        'Accept Order'
+                                                        'Accept'
+                                                    )}
+                                                </button>
+                                                <button
+                                                    className="btn btn-danger btn-half"
+                                                    onClick={() => handleDeclineOrder(order._id)}
+                                                    disabled={processingOrder === order._id}
+                                                >
+                                                    {processingOrder === order._id ? (
+                                                        <>
+                                                            <LoadingSpinner size="small" />
+                                                            Declining...
+                                                        </>
+                                                    ) : (
+                                                        'Decline'
                                                     )}
                                                 </button>
                                             </div>

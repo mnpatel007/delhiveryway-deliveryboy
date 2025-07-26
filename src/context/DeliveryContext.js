@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from './AuthContext';
+import { mockAvailableOrders, mockActiveDeliveries, mockEarnings, useMockData } from '../utils/mockData';
 
 export const DeliveryContext = createContext();
 
@@ -25,8 +26,15 @@ export const DeliveryProvider = ({ children }) => {
     const [error, setError] = useState(null);
 
     // Fetch available orders
-    const fetchAvailableOrders = async () => {
+    const fetchAvailableOrders = async (retryCount = 0) => {
         if (!isAuthenticated) return;
+
+        // Use mock data if enabled
+        if (useMockData()) {
+            setAvailableOrders(mockAvailableOrders);
+            setError(null);
+            return;
+        }
 
         try {
             setLoading(true);
@@ -35,15 +43,32 @@ export const DeliveryProvider = ({ children }) => {
             setError(null);
         } catch (error) {
             console.error('Failed to fetch available orders:', error);
-            setError('Failed to fetch available orders');
+
+            // Retry up to 2 times for network errors
+            if (retryCount < 2 && (error.code === 'NETWORK_ERROR' || error.response?.status >= 500)) {
+                setTimeout(() => fetchAvailableOrders(retryCount + 1), 1000 * (retryCount + 1));
+                return;
+            }
+
+            // Fallback to mock data on error
+            console.log('Using fallback mock data for available orders');
+            setAvailableOrders(mockAvailableOrders);
+            setError('Using offline data - some features may be limited');
         } finally {
             setLoading(false);
         }
     };
 
     // Fetch active deliveries
-    const fetchActiveDeliveries = async () => {
+    const fetchActiveDeliveries = async (retryCount = 0) => {
         if (!isAuthenticated) return;
+
+        // Use mock data if enabled
+        if (useMockData()) {
+            setActiveDeliveries(mockActiveDeliveries);
+            setError(null);
+            return;
+        }
 
         try {
             const response = await axios.get(`${API_BASE_URL}/api/delivery/active-deliveries`);
@@ -51,7 +76,17 @@ export const DeliveryProvider = ({ children }) => {
             setError(null);
         } catch (error) {
             console.error('Failed to fetch active deliveries:', error);
-            setError('Failed to fetch active deliveries');
+
+            // Retry for network errors
+            if (retryCount < 2 && (error.code === 'NETWORK_ERROR' || error.response?.status >= 500)) {
+                setTimeout(() => fetchActiveDeliveries(retryCount + 1), 1000 * (retryCount + 1));
+                return;
+            }
+
+            // Fallback to mock data
+            console.log('Using fallback mock data for active deliveries');
+            setActiveDeliveries(mockActiveDeliveries);
+            setError('Using offline data - some features may be limited');
         }
     };
 
@@ -74,13 +109,24 @@ export const DeliveryProvider = ({ children }) => {
     const fetchEarnings = async () => {
         if (!isAuthenticated) return;
 
+        // Use mock data if enabled
+        if (useMockData()) {
+            setEarnings(mockEarnings);
+            setError(null);
+            return;
+        }
+
         try {
             const response = await axios.get(`${API_BASE_URL}/api/delivery/earnings`);
             setEarnings(response.data);
             setError(null);
         } catch (error) {
             console.error('Failed to fetch earnings:', error);
-            setError('Failed to fetch earnings');
+
+            // Fallback to mock data
+            console.log('Using fallback mock data for earnings');
+            setEarnings(mockEarnings);
+            setError('Using offline data - some features may be limited');
         }
     };
 
@@ -153,6 +199,28 @@ export const DeliveryProvider = ({ children }) => {
         }
     };
 
+    // Decline order
+    const declineOrder = async (orderId, reason = 'Unable to reach location') => {
+        try {
+            setLoading(true);
+            const response = await axios.post(`${API_BASE_URL}/api/delivery/decline/${orderId}`, {
+                reason
+            });
+
+            // Refresh available orders
+            await fetchAvailableOrders();
+
+            setError(null);
+            return { success: true, message: response.data.message };
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Failed to decline order';
+            setError(errorMessage);
+            return { success: false, message: errorMessage };
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Refresh all data
     const refreshData = async () => {
         if (!isAuthenticated) return;
@@ -184,6 +252,7 @@ export const DeliveryProvider = ({ children }) => {
         fetchDeliveryHistory,
         fetchEarnings,
         acceptOrder,
+        declineOrder,
         markPickedUp,
         markDelivered,
         refreshData,

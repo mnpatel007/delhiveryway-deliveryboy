@@ -175,7 +175,7 @@ export default function EarningsPage() {
                                 <div key={delivery._id} className="delivery-item">
                                     <div className="delivery-info">
                                         <div className="delivery-header">
-                                            <span className="order-id">#{delivery.orderId?.slice(-6) || 'N/A'}</span>
+                                            <span className="order-id">#{delivery._id ? String(delivery._id).slice(-6) : 'N/A'}</span>
                                             <span className="delivery-date">
                                                 {new Date(delivery.deliveredAt).toLocaleDateString()}
                                             </span>

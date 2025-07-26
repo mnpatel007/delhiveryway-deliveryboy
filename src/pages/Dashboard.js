@@ -21,6 +21,22 @@ export default function Dashboard() {
     const { isConnected, notifications } = useContext(SocketContext);
 
     const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+    const [dataLoaded, setDataLoaded] = useState(false);
+
+    // Load initial data
+    useEffect(() => {
+        if (deliveryBoy && !dataLoaded) {
+            const loadData = async () => {
+                try {
+                    await refreshData();
+                    setDataLoaded(true);
+                } catch (error) {
+                    console.error('Failed to load dashboard data:', error);
+                }
+            };
+            loadData();
+        }
+    }, [deliveryBoy, dataLoaded, refreshData]);
 
     // Check location permission on mount
     useEffect(() => {
@@ -63,7 +79,7 @@ export default function Dashboard() {
         }
     };
 
-    if (loading) {
+    if (loading && !dataLoaded) {
         return <LoadingSpinner message="Loading dashboard..." />;
     }
 

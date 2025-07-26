@@ -100,7 +100,19 @@ export const SocketProvider = ({ children }) => {
 
     // Add notification to list
     const addNotification = (notification) => {
-        setNotifications(prev => [notification, ...prev.slice(0, 49)]); // Keep last 50 notifications
+        setNotifications(prev => {
+            // Check if notification already exists
+            const exists = prev.some(notif =>
+                notif.id === notification.id ||
+                (notif.message === notification.message && notif.title === notification.title)
+            );
+
+            if (exists) {
+                return prev; // Don't add duplicate
+            }
+
+            return [notification, ...prev.slice(0, 49)]; // Keep last 50 notifications
+        });
     };
 
     // Remove notification
