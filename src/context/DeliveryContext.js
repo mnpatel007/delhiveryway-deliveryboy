@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from './AuthContext';
-import { mockAvailableOrders, mockActiveDeliveries, mockEarnings, useMockData } from '../utils/mockData';
+import { mockAvailableOrders, mockActiveDeliveries, mockEarnings } from '../utils/mockData';
 
 export const DeliveryContext = createContext();
 
@@ -30,7 +30,7 @@ export const DeliveryProvider = ({ children }) => {
         if (!isAuthenticated) return;
 
         // Use mock data if enabled
-        if (useMockData()) {
+        if (process.env.REACT_APP_USE_MOCK_DATA === 'true') {
             setAvailableOrders(mockAvailableOrders);
             setError(null);
             return;
@@ -64,7 +64,7 @@ export const DeliveryProvider = ({ children }) => {
         if (!isAuthenticated) return;
 
         // Use mock data if enabled
-        if (useMockData()) {
+        if (process.env.REACT_APP_USE_MOCK_DATA === 'true') {
             setActiveDeliveries(mockActiveDeliveries);
             setError(null);
             return;
@@ -110,7 +110,7 @@ export const DeliveryProvider = ({ children }) => {
         if (!isAuthenticated) return;
 
         // Use mock data if enabled
-        if (useMockData()) {
+        if (process.env.REACT_APP_USE_MOCK_DATA === 'true') {
             setEarnings(mockEarnings);
             setError(null);
             return;

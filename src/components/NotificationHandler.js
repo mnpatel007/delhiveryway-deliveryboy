@@ -84,35 +84,7 @@ const NotificationHandler = () => {
         );
     };
 
-    const getNotificationIcon = (type) => {
-        switch (type) {
-            case 'new_order':
-                return '📦';
-            case 'status_update':
-                return '📋';
-            case 'order_cancelled':
-                return '❌';
-            case 'earnings':
-                return '💰';
-            default:
-                return '🔔';
-        }
-    };
 
-    const getNotificationColor = (type) => {
-        switch (type) {
-            case 'new_order':
-                return '#4CAF50';
-            case 'status_update':
-                return '#2196F3';
-            case 'order_cancelled':
-                return '#f44336';
-            case 'earnings':
-                return '#FF9800';
-            default:
-                return '#9C27B0';
-        }
-    };
 
     return (
         <div className="notification-handler">
