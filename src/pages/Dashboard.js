@@ -1,84 +1,314 @@
-import React, { useContext, useState, useEffect, useCallback } from 'react';
-import DashboardLayout from './DashboardLayout';
-import OrdersSection from './dashboard/OrdersSection';
-import EarningsSection from './dashboard/EarningsSection';
-import HistorySection from './dashboard/HistorySection';
-import ProfileSection from './dashboard/ProfileSection';
-import SupportSection from './dashboard/SupportSection';
+import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { DeliveryContext } from '../context/DeliveryContext';
+import { LocationContext } from '../context/LocationContext';
+import { SocketContext } from '../context/SocketContext';
+import LoadingSpinner from '../components/LoadingSpinner';
+import './Dashboard.css';
 
 export default function Dashboard() {
-    const { deliveryBoy, logout } = useContext(AuthContext);
-    const [currentSection, setCurrentSection] = useState('orders');
-    const [darkMode, setDarkMode] = useState(false);
+    const { deliveryBoy, updateOnlineStatus } = useContext(AuthContext);
+    const {
+        availableOrders,
+        activeDeliveries,
+        earnings,
+        loading,
+        error,
+        acceptOrder,
+        refreshData
+    } = useContext(DeliveryContext);
+    const { currentLocation, isTracking, startTracking } = useContext(LocationContext);
+    const { isConnected, notifications } = useContext(SocketContext);
 
-    /* ---- earnings & history now come from DeliveryRecord ---- */
-    const [earnings, setEarnings] = useState({ today: 0, week: 0, month: 0 });
-    const [history, setHistory] = useState([]);
+    const [showLocationPrompt, setShowLocationPrompt] = useState(false);
 
-    const token = localStorage.getItem('token');
-
-    /* fetch earnings & history from /api/delivery/my-deliveries */
-    const fetchStats = useCallback(async () => {
-        if (!token) return;
-        try {
-            const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/delivery/my-deliveries`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await res.json();
-            /* flat ₹30 per delivery */
-            const delivered = data.filter(d => d.status === 'delivered');
-            setHistory(delivered);
-
-            /* calculate */
-            const now = new Date();
-            let today = 0, week = 0, month = 0;
-            delivered.forEach(d => {
-                const ts = new Date(d.deliveredAt);
-                if (ts.toDateString() === now.toDateString()) today += 30;
-                if ((now - ts) / (1000 * 60 * 60 * 24) <= 7) week += 30;
-                if (ts.getMonth() === now.getMonth() && ts.getFullYear() === now.getFullYear()) month += 30;
-            });
-            setEarnings({ today, week, month });
-        } catch (e) {
-            console.error(e);
-        }
-    }, [token]);
-
+    // Check location permission on mount
     useEffect(() => {
-        fetchStats();
-    }, [fetchStats]);
+        if (!isTracking && deliveryBoy?.isOnline) {
+            setShowLocationPrompt(true);
+        }
+    }, [isTracking, deliveryBoy?.isOnline]);
 
-    const handleSectionChange = useCallback(sec => setCurrentSection(sec), []);
-    const handleSetDarkMode = useCallback(mode => setDarkMode(mode), []);
-    const handleLogout = useCallback(() => logout(), [logout]);
+    const handleGoOnline = async () => {
+        if (!currentLocation && !isTracking) {
+            const success = await startTracking();
+            if (!success) {
+                alert('Location access is required to go online. Please enable location services.');
+                return;
+            }
+        }
+        await updateOnlineStatus(true);
+    };
+
+    const handleGoOffline = async () => {
+        await updateOnlineStatus(false);
+    };
+
+    const handleAcceptOrder = async (orderId) => {
+        if (!currentLocation) {
+            alert('Location is required to accept orders');
+            return;
+        }
+
+        const result = await acceptOrder(orderId, currentLocation);
+        if (result.success) {
+            // Order accepted successfully
+        }
+    };
+
+    const handleEnableLocation = async () => {
+        const success = await startTracking();
+        if (success) {
+            setShowLocationPrompt(false);
+        }
+    };
+
+    if (loading) {
+        return <LoadingSpinner message="Loading dashboard..." />;
+    }
 
     return (
-        <DashboardLayout
-            onSectionChange={handleSectionChange}
-            currentSection={currentSection}
-            onLogout={handleLogout}
-            darkMode={darkMode}
-            setDarkMode={handleSetDarkMode}
-            deliveryBoy={deliveryBoy?.deliveryBoy}
-        >
-            {currentSection === 'orders' && (
-                <OrdersSection
-                    deliveryBoy={deliveryBoy?.deliveryBoy}
-                    darkMode={darkMode}
-                    onDelivered={fetchStats}
-                />
-            )}
-            {currentSection === 'earnings' && (
-                <EarningsSection darkMode={darkMode} earnings={earnings} />
-            )}
-            {currentSection === 'history' && (
-                <HistorySection darkMode={darkMode} history={history} />
-            )}
-            {currentSection === 'profile' && (
-                <ProfileSection darkMode={darkMode} deliveryBoy={deliveryBoy?.deliveryBoy} />
-            )}
-            {currentSection === 'support' && <SupportSection darkMode={darkMode} />}
-        </DashboardLayout>
+        <div className="dashboard">
+            <div className="dashboard-container">
+                {/* Header */}
+                <div className="dashboard-header">
+                    <div className="welcome-section">
+                        <h1>Welcome back, {deliveryBoy?.name}!</h1>
+                        <p>Ready to start delivering?</p>
+                    </div>
+
+                    <div className="status-section">
+                        <div className="status-indicators">
+                            <div className={`status-indicator ${deliveryBoy?.isOnline ? 'online' : 'offline'}`}>
+                                <span className="status-dot"></span>
+                                <span>{deliveryBoy?.isOnline ? 'Online' : 'Offline'}</span>
+                            </div>
+
+                            <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
+                                <span className="status-dot"></span>
+                                <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
+                            </div>
+
+                            <div className={`status-indicator ${isTracking ? 'tracking' : 'not-tracking'}`}>
+                                <span className="status-dot"></span>
+                                <span>{isTracking ? 'GPS Active' : 'GPS Inactive'}</span>
+                            </div>
+                        </div>
+
+                        <div className="online-toggle">
+                            {deliveryBoy?.isOnline ? (
+                                <button
+                                    className="btn btn-danger"
+                                    onClick={handleGoOffline}
+                                >
+                                    Go Offline
+                                </button>
+                            ) : (
+                                <button
+                                    className="btn btn-success"
+                                    onClick={handleGoOnline}
+                                >
+                                    Go Online
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Location Prompt */}
+                {showLocationPrompt && (
+                    <div className="location-prompt">
+                        <div className="prompt-content">
+                            <span className="prompt-icon">📍</span>
+                            <div className="prompt-text">
+                                <h4>Enable Location Services</h4>
+                                <p>Location access is required to receive and deliver orders</p>
+                            </div>
+                            <div className="prompt-actions">
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleEnableLocation}
+                                >
+                                    Enable Location
+                                </button>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowLocationPrompt(false)}
+                                >
+                                    Later
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Error Message */}
+                {error && (
+                    <div className="error-banner">
+                        <span className="error-icon">⚠️</span>
+                        <span>{error}</span>
+                        <button
+                            className="btn btn-sm"
+                            onClick={refreshData}
+                        >
+                            Retry
+                        </button>
+                    </div>
+                )}
+
+                {/* Stats Cards */}
+                <div className="stats-grid">
+                    <div className="stat-card">
+                        <div className="stat-icon">💰</div>
+                        <div className="stat-content">
+                            <h3>₹{earnings.todayEarnings}</h3>
+                            <p>Today's Earnings</p>
+                        </div>
+                    </div>
+
+                    <div className="stat-card">
+                        <div className="stat-icon">📦</div>
+                        <div className="stat-content">
+                            <h3>{earnings.todayDeliveries}</h3>
+                            <p>Today's Deliveries</p>
+                        </div>
+                    </div>
+
+                    <div className="stat-card">
+                        <div className="stat-icon">🎯</div>
+                        <div className="stat-content">
+                            <h3>{activeDeliveries.length}</h3>
+                            <p>Active Orders</p>
+                        </div>
+                    </div>
+
+                    <div className="stat-card">
+                        <div className="stat-icon">📈</div>
+                        <div className="stat-content">
+                            <h3>₹{earnings.weekEarnings}</h3>
+                            <p>This Week</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="dashboard-content">
+                    {/* Active Deliveries */}
+                    {activeDeliveries.length > 0 && (
+                        <div className="section">
+                            <div className="section-header">
+                                <h2>Active Deliveries</h2>
+                                <span className="badge">{activeDeliveries.length}</span>
+                            </div>
+                            <div className="orders-list">
+                                {activeDeliveries.map(order => (
+                                    <div key={order._id} className="order-card active">
+                                        <div className="order-header">
+                                            <span className="order-id">#{order._id.slice(-6)}</span>
+                                            <span className={`status-badge ${order.status}`}>
+                                                {order.status}
+                                            </span>
+                                        </div>
+                                        <div className="order-details">
+                                            <div className="customer-info">
+                                                <h4>{order.customer?.name}</h4>
+                                                <p>{order.deliveryAddress}</p>
+                                            </div>
+                                            <div className="order-actions">
+                                                <button className="btn btn-primary btn-sm">
+                                                    View Details
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Available Orders */}
+                    <div className="section">
+                        <div className="section-header">
+                            <h2>Available Orders</h2>
+                            <span className="badge">{availableOrders.length}</span>
+                        </div>
+
+                        {!deliveryBoy?.isOnline ? (
+                            <div className="empty-state">
+                                <span className="empty-icon">🔴</span>
+                                <h3>You're Offline</h3>
+                                <p>Go online to start receiving delivery requests</p>
+                                <button
+                                    className="btn btn-success"
+                                    onClick={handleGoOnline}
+                                >
+                                    Go Online
+                                </button>
+                            </div>
+                        ) : availableOrders.length === 0 ? (
+                            <div className="empty-state">
+                                <span className="empty-icon">📦</span>
+                                <h3>No Orders Available</h3>
+                                <p>New orders will appear here when available</p>
+                            </div>
+                        ) : (
+                            <div className="orders-list">
+                                {availableOrders.map(order => (
+                                    <div key={order._id} className="order-card available">
+                                        <div className="order-header">
+                                            <span className="order-id">#{order._id.slice(-6)}</span>
+                                            <span className="earning">₹30</span>
+                                        </div>
+                                        <div className="order-details">
+                                            <div className="customer-info">
+                                                <h4>{order.customer?.name}</h4>
+                                                <p>{order.deliveryAddress}</p>
+                                                <div className="distance">
+                                                    📍 {order.distance ? `${order.distance.toFixed(1)} km` : 'Calculating...'}
+                                                </div>
+                                            </div>
+                                            <div className="order-actions">
+                                                <button
+                                                    className="btn btn-success"
+                                                    onClick={() => handleAcceptOrder(order._id)}
+                                                >
+                                                    Accept Order
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Recent Notifications */}
+                    {notifications.length > 0 && (
+                        <div className="section">
+                            <div className="section-header">
+                                <h2>Recent Notifications</h2>
+                            </div>
+                            <div className="notifications-list">
+                                {notifications.slice(0, 3).map(notification => (
+                                    <div key={notification.id} className="notification-item">
+                                        <span className="notification-icon">
+                                            {notification.type === 'new_order' ? '📦' :
+                                                notification.type === 'order_cancelled' ? '❌' : '📋'}
+                                        </span>
+                                        <div className="notification-content">
+                                            <h4>{notification.title}</h4>
+                                            <p>{notification.message}</p>
+                                            <span className="notification-time">
+                                                {new Date(notification.timestamp).toLocaleTimeString()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
     );
 }

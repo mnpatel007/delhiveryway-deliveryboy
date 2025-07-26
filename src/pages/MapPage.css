@@ -1,0 +1,524 @@
+.map-page {
+    min-height: calc(100vh - 70px);
+    background: #f8f9fa;
+    padding: 20px;
+}
+
+.map-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Header */
+.map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.map-header h1 {
+    margin: 0;
+    color: #333;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.location-status {
+    display: flex;
+    align-items: center;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.status-indicator.tracking {
+    background: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.status-indicator.not-tracking {
+    background: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-indicator.tracking .status-dot {
+    background: #4CAF50;
+    box-shadow: 0 0 6px #4CAF50;
+}
+
+.status-indicator.not-tracking .status-dot {
+    background: #f44336;
+}
+
+/* Error Banner */
+.error-banner {
+    background: #fee;
+    color: #c33;
+    padding: 15px 20px;
+    border-radius: 10px;
+    border: 1px solid #fcc;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.error-icon {
+    font-size: 1.2rem;
+}
+
+/* Map Content */
+.map-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+/* Location Card */
+.location-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.card-content {
+    padding: 25px;
+}
+
+.location-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.coordinates {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.coordinates:last-child {
+    border-bottom: none;
+}
+
+.coordinates .label {
+    color: #666;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.coordinates .value {
+    color: #333;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+.no-location {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.no-location-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.no-location p {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+/* Deliveries Section */
+.deliveries-section {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.section-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.delivery-count {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.deliveries-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.delivery-card {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.delivery-card:last-child {
+    border-bottom: none;
+}
+
+.delivery-card:hover {
+    background: #f8f9fa;
+}
+
+.delivery-card.selected {
+    background: #e3f2fd;
+    border-left: 4px solid #2196F3;
+}
+
+.delivery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.order-id {
+    font-weight: 600;
+    color: #333;
+    font-size: 1rem;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    color: white;
+}
+
+.status-badge.assigned {
+    background: #ffc107;
+}
+
+.status-badge.picked_up {
+    background: #17a2b8;
+}
+
+.status-badge.in_transit {
+    background: #007bff;
+}
+
+.delivery-info {
+    margin-bottom: 15px;
+}
+
+.customer-info {
+    margin-bottom: 10px;
+}
+
+.customer-info h4 {
+    margin: 0 0 5px 0;
+    color: #333;
+    font-size: 1rem;
+}
+
+.customer-info p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.address-info h5 {
+    margin: 0 0 5px 0;
+    color: #333;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.address-info p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.delivery-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-outline {
+    background: transparent;
+    color: #007bff;
+    border: 1px solid #007bff;
+}
+
+.btn-outline:hover {
+    background: #007bff;
+    color: white;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Empty State */
+.empty-state {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.empty-state h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 1.2rem;
+}
+
+.empty-state p {
+    margin: 0;
+    color: #666;
+    font-size: 1rem;
+}
+
+/* Map Placeholder */
+.map-placeholder {
+    grid-column: 1 / -1;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    text-align: center;
+}
+
+.placeholder-content {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.placeholder-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.placeholder-content h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.placeholder-content p {
+    color: #666;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 25px;
+}
+
+.map-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.feature {
+    color: #28a745;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.integration-note {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .map-page {
+        padding: 15px;
+    }
+
+    .map-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .map-content {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .card-content {
+        padding: 20px;
+    }
+
+    .delivery-actions {
+        flex-direction: column;
+    }
+
+    .deliveries-list {
+        max-height: 300px;
+    }
+
+    .map-placeholder {
+        padding: 30px 20px;
+    }
+
+    .map-features {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .map-page {
+        padding: 10px;
+    }
+
+    .map-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .card-header,
+    .section-header {
+        padding: 15px;
+    }
+
+    .card-content {
+        padding: 15px;
+    }
+
+    .delivery-card {
+        padding: 15px;
+    }
+
+    .map-placeholder {
+        padding: 25px 15px;
+    }
+
+    .placeholder-icon {
+        font-size: 3rem;
+    }
+
+    .placeholder-content h3 {
+        font-size: 1.3rem;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+
+    .location-card,
+    .deliveries-section,
+    .map-placeholder {
+        border: 2px solid #333;
+    }
+
+    .btn-primary {
+        background: #333;
+    }
+
+    .card-header,
+    .section-header {
+        background: #333;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+
+    .btn:hover,
+    .delivery-card:hover {
+        transform: none;
+    }
+
+    .btn,
+    .delivery-card {
+        transition: none;
+    }
+}
