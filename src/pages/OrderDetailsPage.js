@@ -174,11 +174,43 @@ export default function OrderDetailsPage() {
                                         )}
                                     </span>
                                 </div>
-                                <div className="info-item">
-                                    <span className="label">Email:</span>
-                                    <span className="value">{order.customer?.email || 'Not provided'}</span>
-                                </div>
+
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Pickup Address */}
+                    <div className="details-card">
+                        <div className="card-header">
+                            <h3>🏪 Pickup Location</h3>
+                        </div>
+                        <div className="card-content">
+                            {order.items && order.items.length > 0 && order.items[0].shopName ? (
+                                <div className="pickup-info">
+                                    <div className="shop-name">
+                                        <strong>{order.items[0].shopName}</strong>
+                                    </div>
+                                    <div className="shop-address">
+                                        {order.items[0].shopAddress || order.items[0].shopLocation || 'Address not available'}
+                                    </div>
+                                    <div className="pickup-actions">
+                                        <button
+                                            className="btn btn-outline"
+                                            onClick={() => openInGoogleMaps(order.items[0].shopAddress || order.items[0].shopName)}
+                                        >
+                                            📍 View Shop Location
+                                        </button>
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={() => getDirections(order.items[0].shopAddress || order.items[0].shopName)}
+                                        >
+                                            🧭 Get Directions
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="no-pickup-info">Pickup location not available</p>
+                            )}
                         </div>
                     </div>
 
@@ -228,7 +260,7 @@ export default function OrderDetailsPage() {
                                                     <span className="item-shop">From: {item.shopName}</span>
                                                 )}
                                             </div>
-                                            <div className="item-price">₹{item.price || 0}</div>
+                                            <div className="item-price">₹{item.price || item.productPrice || (item.quantity * (item.unitPrice || 0)) || 0}</div>
                                         </div>
                                     ))}
                                     <div className="items-total">

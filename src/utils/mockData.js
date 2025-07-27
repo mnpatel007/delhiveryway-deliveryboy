@@ -13,13 +13,15 @@ export const mockAvailableOrders = [
                 name: "Chicken Biryani",
                 quantity: 2,
                 price: 250,
-                shopName: "Biryani House"
+                shopName: "Biryani House",
+                shopAddress: "456 MG Road, Bangalore, Karnataka 560001"
             },
             {
                 name: "Raita",
                 quantity: 1,
                 price: 50,
-                shopName: "Biryani House"
+                shopName: "Biryani House",
+                shopAddress: "456 MG Road, Bangalore, Karnataka 560001"
             }
         ],
         totalAmount: 550,
@@ -41,13 +43,15 @@ export const mockAvailableOrders = [
                 name: "Margherita Pizza",
                 quantity: 1,
                 price: 350,
-                shopName: "Pizza Corner"
+                shopName: "Pizza Corner",
+                shopAddress: "789 Commercial Street, Bangalore, Karnataka 560025"
             },
             {
                 name: "Garlic Bread",
                 quantity: 1,
                 price: 120,
-                shopName: "Pizza Corner"
+                shopName: "Pizza Corner",
+                shopAddress: "789 Commercial Street, Bangalore, Karnataka 560025"
             }
         ],
         totalAmount: 470,
@@ -72,13 +76,15 @@ export const mockActiveDeliveries = [
                 name: "Masala Dosa",
                 quantity: 2,
                 price: 80,
-                shopName: "South Indian Cafe"
+                shopName: "South Indian Cafe",
+                shopAddress: "123 Brigade Road, Bangalore, Karnataka 560025"
             },
             {
                 name: "Filter Coffee",
                 quantity: 2,
                 price: 40,
-                shopName: "South Indian Cafe"
+                shopName: "South Indian Cafe",
+                shopAddress: "123 Brigade Road, Bangalore, Karnataka 560025"
             }
         ],
         totalAmount: 240,
@@ -89,13 +95,13 @@ export const mockActiveDeliveries = [
 ];
 
 export const mockEarnings = {
-    todayEarnings: 450,
-    weeklyEarnings: 2800,
-    monthlyEarnings: 12500,
-    totalEarnings: 45600,
-    todayDeliveries: 8,
-    weeklyDeliveries: 42,
-    monthlyDeliveries: 186
+    todayEarnings: 120,
+    weeklyEarnings: 120,
+    monthlyEarnings: 270,
+    totalEarnings: 1200,
+    todayDeliveries: 4,
+    weeklyDeliveries: 4,
+    monthlyDeliveries: 9
 };
 
 // Function to use mock data in development
