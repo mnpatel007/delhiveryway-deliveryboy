@@ -7,7 +7,7 @@ export const LocationContext = createContext();
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
 export const LocationProvider = ({ children }) => {
-    const { isAuthenticated, user } = useContext(AuthContext);
+    const { isAuthenticated, deliveryBoy } = useContext(AuthContext);
     const [currentLocation, setCurrentLocation] = useState(null);
     const [locationError, setLocationError] = useState(null);
     const [isTracking, setIsTracking] = useState(false);
@@ -26,12 +26,24 @@ export const LocationProvider = ({ children }) => {
         try {
             const permission = await navigator.permissions.query({ name: 'geolocation' });
             setPermissionStatus(permission.state);
+
+            // Listen for permission changes
+            permission.onchange = () => {
+                setPermissionStatus(permission.state);
+                if (permission.state === 'denied' && isTracking) {
+                    stopTracking();
+                    setLocationError('Location permission was denied');
+                } else if (permission.state === 'granted' && !isTracking && deliveryBoy) {
+                    startTracking();
+                }
+            };
+
             return permission.state;
         } catch (error) {
             console.error('Permission check failed:', error);
             return 'prompt';
         }
-    }, []);
+    }, [isTracking, deliveryBoy, stopTracking, startTracking]);
 
     // Mobile-optimized location options
     const getLocationOptions = (highAccuracy = true) => ({
@@ -115,7 +127,7 @@ export const LocationProvider = ({ children }) => {
 
     // Update location on server
     const updateLocationOnServer = useCallback(async (location) => {
-        if (!isAuthenticated || !user?.id) return;
+        if (!isAuthenticated || !deliveryBoy?._id) return;
 
         try {
             await axios.put(`${API_BASE_URL}/api/delivery/location`, {
@@ -131,7 +143,7 @@ export const LocationProvider = ({ children }) => {
         } catch (error) {
             console.error('Failed to update location on server:', error);
         }
-    }, [isAuthenticated, user]);
+    }, [isAuthenticated, deliveryBoy]);
 
     // Start location tracking
     const startTracking = useCallback(() => {
@@ -258,7 +270,7 @@ export const LocationProvider = ({ children }) => {
 
     // Auto-start tracking when authenticated (only once)
     useEffect(() => {
-        if (isAuthenticated && !trackingInitialized.current) {
+        if (isAuthenticated && deliveryBoy && !trackingInitialized.current) {
             trackingInitialized.current = true;
             checkLocationPermission().then((permission) => {
                 if (permission === 'granted' && !isTracking) {
@@ -277,7 +289,7 @@ export const LocationProvider = ({ children }) => {
                 stopTracking();
             }
         };
-    }, [isAuthenticated]); // Remove isTracking from dependencies to prevent loop
+    }, [isAuthenticated, deliveryBoy]); // Remove isTracking from dependencies to prevent loop
 
     // Check permission on mount
     useEffect(() => {

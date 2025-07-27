@@ -47,7 +47,7 @@ export const SocketProvider = ({ children }) => {
                     id: Date.now(),
                     type: 'new_order',
                     title: 'New Delivery Available!',
-                    message: `Order #${data.orderId.slice(-6)} is ready for pickup`,
+                    message: `Order #${data.orderId?.slice(-6) || 'Unknown'} is ready for pickup`,
                     data: data,
                     timestamp: new Date().toISOString()
                 });
@@ -56,7 +56,12 @@ export const SocketProvider = ({ children }) => {
                 playNotificationSound();
 
                 // Show browser notification if permission granted
-                showBrowserNotification('New Delivery Available!', `Order #${data.orderId.slice(-6)} is ready for pickup`);
+                showBrowserNotification('New Delivery Available!', `Order #${data.orderId?.slice(-6) || 'Unknown'} is ready for pickup`);
+
+                // Refresh delivery context data
+                if (window.refreshDeliveryData) {
+                    window.refreshDeliveryData();
+                }
             });
 
             // Listen for order status updates
@@ -66,10 +71,15 @@ export const SocketProvider = ({ children }) => {
                     id: Date.now(),
                     type: 'status_update',
                     title: 'Order Status Updated',
-                    message: `Order #${data.orderId.slice(-6)} status: ${data.status}`,
+                    message: `Order #${data.orderId?.slice(-6) || 'Unknown'} status: ${data.status}`,
                     data: data,
                     timestamp: new Date().toISOString()
                 });
+
+                // Refresh delivery context data
+                if (window.refreshDeliveryData) {
+                    window.refreshDeliveryData();
+                }
             });
 
             // Listen for order cancellations
@@ -79,13 +89,18 @@ export const SocketProvider = ({ children }) => {
                     id: Date.now(),
                     type: 'order_cancelled',
                     title: 'Order Cancelled',
-                    message: `Order #${data.orderId.slice(-6)} has been cancelled`,
+                    message: `Order #${data.orderId?.slice(-6) || 'Unknown'} has been cancelled`,
                     data: data,
                     timestamp: new Date().toISOString()
                 });
 
                 playNotificationSound();
-                showBrowserNotification('Order Cancelled', `Order #${data.orderId.slice(-6)} has been cancelled`);
+                showBrowserNotification('Order Cancelled', `Order #${data.orderId?.slice(-6) || 'Unknown'} has been cancelled`);
+
+                // Refresh delivery context data
+                if (window.refreshDeliveryData) {
+                    window.refreshDeliveryData();
+                }
             });
 
             setSocket(newSocket);

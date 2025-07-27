@@ -64,13 +64,22 @@ export default function Dashboard() {
 
     const handleAcceptOrder = async (orderId) => {
         if (!currentLocation) {
-            alert('Location is required to accept orders');
+            setError('Location is required to accept orders. Please enable location services.');
             return;
         }
 
-        const result = await acceptOrder(orderId, currentLocation);
-        if (result.success) {
-            // Order accepted successfully
+        try {
+            const result = await acceptOrder(orderId, currentLocation);
+            if (result.success) {
+                // Show success message and navigate
+                setError(null);
+                navigate('/orders');
+            } else {
+                setError(result.message);
+            }
+        } catch (error) {
+            console.error('Error accepting order:', error);
+            setError('Failed to accept order. Please try again.');
         }
     };
 

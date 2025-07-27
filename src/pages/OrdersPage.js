@@ -21,10 +21,66 @@ export default function OrdersPage() {
 
     const [activeTab, setActiveTab] = useState('available');
     const [processingOrder, setProcessingOrder] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState('newest');
 
     useEffect(() => {
         refreshData();
     }, []);
+
+    // Filter and sort orders
+    const filterAndSortOrders = (orders) => {
+        let filtered = orders;
+
+        // Filter by search term
+        if (searchTerm) {
+            filtered = filtered.filter(order =>
+                order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.customer?.phone?.includes(searchTerm) ||
+                order.address?.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        // Sort orders
+        switch (sortBy) {
+            case 'newest':
+                filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                break;
+            case 'oldest':
+                filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                break;
+            case 'amount':
+                filtered.sort((a, b) => (b.totalAmount || 0) - (a.totalAmount || 0));
+                break;
+            case 'distance':
+                // Sort by distance if location is available
+                if (currentLocation) {
+                    filtered.sort((a, b) => {
+                        const distA = getDistance(currentLocation, a.customerLocation || {});
+                        const distB = getDistance(currentLocation, b.customerLocation || {});
+                        return distA - distB;
+                    });
+                }
+                break;
+            default:
+                break;
+        }
+
+        return filtered;
+    };
+
+    const getDistance = (pos1, pos2) => {
+        if (!pos1.lat || !pos1.lng || !pos2.lat || !pos2.lng) return 0;
+        const R = 6371; // Earth's radius in km
+        const dLat = (pos2.lat - pos1.lat) * Math.PI / 180;
+        const dLon = (pos2.lng - pos1.lng) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(pos1.lat * Math.PI / 180) * Math.cos(pos2.lat * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
 
     const handleAcceptOrder = async (orderId) => {
         if (!currentLocation) {
@@ -158,123 +214,49 @@ export default function OrdersPage() {
                     </button>
                 </div>
 
+                {/* Search and Filter Controls */}
+                <div className="orders-controls">
+                    <div className="search-box">
+                        <input
+                            type="text"
+                            placeholder="Search orders by ID, customer name, phone, or address..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="search-input"
+                        />
+                    </div>
+                    <div className="sort-controls">
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="sort-select"
+                        >
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="amount">Highest Amount</option>
+                            {currentLocation && <option value="distance">Nearest First</option>}
+                        </select>
+                    </div>
+                </div>
+
                 <div className="orders-content">
                     {activeTab === 'available' && (
                         <div className="orders-section">
-                            {availableOrders.length === 0 ? (
-                                <div className="empty-state">
-                                    <span className="empty-icon">📦</span>
-                                    <h3>No Available Orders</h3>
-                                    <p>New orders will appear here when available</p>
-                                </div>
-                            ) : (
-                                <div className="orders-grid">
-                                    {availableOrders.map(order => (
-                                        <div key={order._id} className="order-card available">
-                                            <div className="order-header">
-                                                <span className="order-id">#{order._id.slice(-6)}</span>
-                                                <span className="earning">₹30</span>
-                                            </div>
-
-                                            <div className="order-info">
-                                                <div className="customer-section">
-                                                    <h4>👤 {order.customer?.name || 'Customer'}</h4>
-                                                    <p>📞 {order.customer?.phone || 'No phone'}</p>
-                                                </div>
-
-                                                <div className="address-section">
-                                                    <h5>🏪 Pickup Address:</h5>
-                                                    <p>
-                                                        {order.items && order.items[0]?.shopName && (
-                                                            <strong>{order.items[0].shopName}</strong>
-                                                        )}
-                                                        <br />
-                                                        {order.items && order.items[0]?.shopAddress || 'Pickup address not available'}
-                                                    </p>
-                                                </div>
-
-                                                <div className="address-section">
-                                                    <h5>📍 Delivery Address:</h5>
-                                                    <p>{order.deliveryAddress}</p>
-                                                </div>
-
-                                                <div className="order-details">
-                                                    <div className="detail-item">
-                                                        <span className="label">Items:</span>
-                                                        <span className="value">{order.items?.length || 0} items</span>
-                                                    </div>
-                                                    <div className="detail-item">
-                                                        <span className="label">Total:</span>
-                                                        <span className="value">₹{order.totalAmount}</span>
-                                                    </div>
-                                                    <div className="detail-item">
-                                                        <span className="label">Distance:</span>
-                                                        <span className="value">
-                                                            {order.distance ? `${order.distance.toFixed(1)} km` : `${(Math.random() * 5 + 1).toFixed(1)} km`}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="order-actions">
-                                                <button
-                                                    className="btn btn-success btn-half"
-                                                    onClick={() => handleAcceptOrder(order._id)}
-                                                    disabled={processingOrder === order._id}
-                                                >
-                                                    {processingOrder === order._id ? (
-                                                        <>
-                                                            <LoadingSpinner size="small" />
-                                                            Accepting...
-                                                        </>
-                                                    ) : (
-                                                        'Accept'
-                                                    )}
-                                                </button>
-                                                <button
-                                                    className="btn btn-danger btn-half"
-                                                    onClick={() => handleDeclineOrder(order._id)}
-                                                    disabled={processingOrder === order._id}
-                                                >
-                                                    {processingOrder === order._id ? (
-                                                        <>
-                                                            <LoadingSpinner size="small" />
-                                                            Declining...
-                                                        </>
-                                                    ) : (
-                                                        'Decline'
-                                                    )}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {activeTab === 'active' && (
-                        <div className="orders-section">
-                            {activeDeliveries.length === 0 ? (
-                                <div className="empty-state">
-                                    <span className="empty-icon">🎯</span>
-                                    <h3>No Active Deliveries</h3>
-                                    <p>Accept orders to start delivering</p>
-                                </div>
-                            ) : (
-                                <div className="orders-grid">
-                                    {activeDeliveries.map(order => {
-                                        const nextAction = getNextAction(order);
-                                        return (
-                                            <div key={order._id} className="order-card active">
+                            {(() => {
+                                const filteredOrders = filterAndSortOrders(availableOrders);
+                                return filteredOrders.length === 0 ? (
+                                    <div className="empty-state">
+                                        <span className="empty-icon">📦</span>
+                                        <h3>{searchTerm ? 'No Matching Orders' : 'No Available Orders'}</h3>
+                                        <p>{searchTerm ? 'Try adjusting your search terms' : 'New orders will appear here when available'}</p>
+                                    </div>
+                                ) : (
+                                    <div className="orders-grid">
+                                        {filteredOrders.map(order => (
+                                            <div key={order._id} className="order-card available">
                                                 <div className="order-header">
                                                     <span className="order-id">#{order._id.slice(-6)}</span>
-                                                    <span
-                                                        className="status-badge"
-                                                        style={{ backgroundColor: getStatusColor(order.status) }}
-                                                    >
-                                                        {order.status.replace('_', ' ')}
-                                                    </span>
+                                                    <span className="earning">₹30</span>
                                                 </div>
 
                                                 <div className="order-info">
@@ -309,51 +291,156 @@ export default function OrdersPage() {
                                                             <span className="value">₹{order.totalAmount}</span>
                                                         </div>
                                                         <div className="detail-item">
-                                                            <span className="label">Earning:</span>
-                                                            <span className="value earning-highlight">₹30</span>
-                                                        </div>
-                                                    </div>
-
-                                                    {order.assignedAt && (
-                                                        <div className="timestamp">
-                                                            <span className="label">Assigned:</span>
+                                                            <span className="label">Distance:</span>
                                                             <span className="value">
-                                                                {new Date(order.assignedAt).toLocaleString()}
+                                                                {order.distance ? `${order.distance.toFixed(1)} km` : `${(Math.random() * 5 + 1).toFixed(1)} km`}
                                                             </span>
                                                         </div>
-                                                    )}
+                                                    </div>
                                                 </div>
 
                                                 <div className="order-actions">
-                                                    <Link
-                                                        to={`/orders/${order._id}`}
-                                                        className="btn btn-outline btn-half"
+                                                    <button
+                                                        className="btn btn-success btn-half"
+                                                        onClick={() => handleAcceptOrder(order._id)}
+                                                        disabled={processingOrder === order._id}
                                                     >
-                                                        View Details
-                                                    </Link>
-
-                                                    {nextAction && (
-                                                        <button
-                                                            className={`btn btn-${nextAction.color} btn-half`}
-                                                            onClick={nextAction.action}
-                                                            disabled={processingOrder === order._id}
-                                                        >
-                                                            {processingOrder === order._id ? (
-                                                                <>
-                                                                    <LoadingSpinner size="small" />
-                                                                    Processing...
-                                                                </>
-                                                            ) : (
-                                                                nextAction.text
-                                                            )}
-                                                        </button>
-                                                    )}
+                                                        {processingOrder === order._id ? (
+                                                            <>
+                                                                <LoadingSpinner size="small" />
+                                                                Accepting...
+                                                            </>
+                                                        ) : (
+                                                            'Accept'
+                                                        )}
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-danger btn-half"
+                                                        onClick={() => handleDeclineOrder(order._id)}
+                                                        disabled={processingOrder === order._id}
+                                                    >
+                                                        {processingOrder === order._id ? (
+                                                            <>
+                                                                <LoadingSpinner size="small" />
+                                                                Declining...
+                                                            </>
+                                                        ) : (
+                                                            'Decline'
+                                                        )}
+                                                    </button>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                                        ))}
+                                    </div>
+                                )
+                            }
+                        </div>
+                    )}
+
+                    {activeTab === 'active' && (
+                        <div className="orders-section">
+                            {(() => {
+                                const filteredOrders = filterAndSortOrders(activeDeliveries);
+                                return filteredOrders.length === 0 ? (
+                                    <div className="empty-state">
+                                        <span className="empty-icon">🎯</span>
+                                        <h3>{searchTerm ? 'No Matching Deliveries' : 'No Active Deliveries'}</h3>
+                                        <p>{searchTerm ? 'Try adjusting your search terms' : 'Accept orders to start delivering'}</p>
+                                    </div>
+                                ) : (
+                                    <div className="orders-grid">
+                                        {filteredOrders.map(order => {
+                                            const nextAction = getNextAction(order);
+                                            return (
+                                                <div key={order._id} className="order-card active">
+                                                    <div className="order-header">
+                                                        <span className="order-id">#{order._id.slice(-6)}</span>
+                                                        <span
+                                                            className="status-badge"
+                                                            style={{ backgroundColor: getStatusColor(order.status) }}
+                                                        >
+                                                            {order.status.replace('_', ' ')}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="order-info">
+                                                        <div className="customer-section">
+                                                            <h4>👤 {order.customer?.name || 'Customer'}</h4>
+                                                            <p>📞 {order.customer?.phone || 'No phone'}</p>
+                                                        </div>
+
+                                                        <div className="address-section">
+                                                            <h5>🏪 Pickup Address:</h5>
+                                                            <p>
+                                                                {order.items && order.items[0]?.shopName && (
+                                                                    <strong>{order.items[0].shopName}</strong>
+                                                                )}
+                                                                <br />
+                                                                {order.items && order.items[0]?.shopAddress || 'Pickup address not available'}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="address-section">
+                                                            <h5>📍 Delivery Address:</h5>
+                                                            <p>{order.deliveryAddress}</p>
+                                                        </div>
+
+                                                        <div className="order-details">
+                                                            <div className="detail-item">
+                                                                <span className="label">Items:</span>
+                                                                <span className="value">{order.items?.length || 0} items</span>
+                                                            </div>
+                                                            <div className="detail-item">
+                                                                <span className="label">Total:</span>
+                                                                <span className="value">₹{order.totalAmount}</span>
+                                                            </div>
+                                                            <div className="detail-item">
+                                                                <span className="label">Earning:</span>
+                                                                <span className="value earning-highlight">₹30</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {order.assignedAt && (
+                                                            <div className="timestamp">
+                                                                <span className="label">Assigned:</span>
+                                                                <span className="value">
+                                                                    {new Date(order.assignedAt).toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="order-actions">
+                                                        <Link
+                                                            to={`/orders/${order._id}`}
+                                                            className="btn btn-outline btn-half"
+                                                        >
+                                                            View Details
+                                                        </Link>
+
+                                                        {nextAction && (
+                                                            <button
+                                                                className={`btn btn-${nextAction.color} btn-half`}
+                                                                onClick={nextAction.action}
+                                                                disabled={processingOrder === order._id}
+                                                            >
+                                                                {processingOrder === order._id ? (
+                                                                    <>
+                                                                        <LoadingSpinner size="small" />
+                                                                        Processing...
+                                                                    </>
+                                                                ) : (
+                                                                    nextAction.text
+                                                                )}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )
+                            }
                         </div>
                     )}
                 </div>

@@ -134,6 +134,12 @@ export const DeliveryProvider = ({ children }) => {
     const acceptOrder = async (orderId, currentLocation) => {
         try {
             setLoading(true);
+            setError(null);
+
+            if (!currentLocation) {
+                throw new Error('Location is required to accept orders');
+            }
+
             const response = await axios.post(`${API_BASE_URL}/api/delivery/accept/${orderId}`, {
                 currentLocation
             });
@@ -144,10 +150,21 @@ export const DeliveryProvider = ({ children }) => {
                 fetchActiveDeliveries()
             ]);
 
-            setError(null);
-            return { success: true, message: response.data.message };
+            return { success: true, message: response.data.message || 'Order accepted successfully' };
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Failed to accept order';
+            console.error('Failed to accept order:', error);
+            let errorMessage = 'Failed to accept order';
+
+            if (error.response?.status === 400) {
+                errorMessage = error.response.data.message || 'Order is no longer available';
+            } else if (error.response?.status === 404) {
+                errorMessage = 'Order not found';
+            } else if (error.response?.status >= 500) {
+                errorMessage = 'Server error. Please try again.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
             setError(errorMessage);
             return { success: false, message: errorMessage };
         } finally {
@@ -159,15 +176,26 @@ export const DeliveryProvider = ({ children }) => {
     const markPickedUp = async (orderId) => {
         try {
             setLoading(true);
+            setError(null);
+
             const response = await axios.put(`${API_BASE_URL}/api/delivery/pickup/${orderId}`, {});
 
             // Refresh active deliveries
             await fetchActiveDeliveries();
 
-            setError(null);
-            return { success: true, message: response.data.message };
+            return { success: true, message: response.data.message || 'Order marked as picked up' };
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Failed to mark as picked up';
+            console.error('Failed to mark as picked up:', error);
+            let errorMessage = 'Failed to mark as picked up';
+
+            if (error.response?.status === 404) {
+                errorMessage = 'Order not found or not assigned to you';
+            } else if (error.response?.status === 400) {
+                errorMessage = error.response.data.message || 'Invalid order status';
+            } else if (error.response?.status >= 500) {
+                errorMessage = 'Server error. Please try again.';
+            }
+
             setError(errorMessage);
             return { success: false, message: errorMessage };
         } finally {
@@ -179,6 +207,8 @@ export const DeliveryProvider = ({ children }) => {
     const markDelivered = async (orderId) => {
         try {
             setLoading(true);
+            setError(null);
+
             const response = await axios.put(`${API_BASE_URL}/api/delivery/deliver/${orderId}`, {});
 
             // Refresh data
@@ -188,10 +218,19 @@ export const DeliveryProvider = ({ children }) => {
                 fetchDeliveryHistory()
             ]);
 
-            setError(null);
-            return { success: true, message: response.data.message, earnings: response.data.earnings };
+            return { success: true, message: response.data.message || 'Order delivered successfully', earnings: response.data.earnings };
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Failed to mark as delivered';
+            console.error('Failed to mark as delivered:', error);
+            let errorMessage = 'Failed to mark as delivered';
+
+            if (error.response?.status === 404) {
+                errorMessage = 'Order not found or not assigned to you';
+            } else if (error.response?.status === 400) {
+                errorMessage = error.response.data.message || 'Invalid order status';
+            } else if (error.response?.status >= 500) {
+                errorMessage = 'Server error. Please try again.';
+            }
+
             setError(errorMessage);
             return { success: false, message: errorMessage };
         } finally {
@@ -259,6 +298,14 @@ export const DeliveryProvider = ({ children }) => {
             refreshData();
         }
     }, [isAuthenticated]);
+
+    // Expose refresh function globally for socket updates
+    useEffect(() => {
+        window.refreshDeliveryData = refreshData;
+        return () => {
+            delete window.refreshDeliveryData;
+        };
+    }, [refreshData]);
 
     const value = {
         availableOrders,
