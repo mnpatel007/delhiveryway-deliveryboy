@@ -26,24 +26,12 @@ export const LocationProvider = ({ children }) => {
         try {
             const permission = await navigator.permissions.query({ name: 'geolocation' });
             setPermissionStatus(permission.state);
-
-            // Listen for permission changes
-            permission.onchange = () => {
-                setPermissionStatus(permission.state);
-                if (permission.state === 'denied' && isTracking) {
-                    stopTracking();
-                    setLocationError('Location permission was denied');
-                } else if (permission.state === 'granted' && !isTracking && deliveryBoy) {
-                    startTracking();
-                }
-            };
-
             return permission.state;
         } catch (error) {
             console.error('Permission check failed:', error);
             return 'prompt';
         }
-    }, [isTracking, deliveryBoy, stopTracking, startTracking]);
+    }, []);
 
     // Mobile-optimized location options
     const getLocationOptions = (highAccuracy = true) => ({
@@ -295,6 +283,39 @@ export const LocationProvider = ({ children }) => {
     useEffect(() => {
         checkLocationPermission();
     }, [checkLocationPermission]);
+
+    // Monitor permission changes
+    useEffect(() => {
+        if (!navigator.permissions) return;
+
+        let permissionWatcher;
+
+        const setupPermissionWatcher = async () => {
+            try {
+                const permission = await navigator.permissions.query({ name: 'geolocation' });
+
+                permission.onchange = () => {
+                    setPermissionStatus(permission.state);
+                    if (permission.state === 'denied' && isTracking) {
+                        stopTracking();
+                        setLocationError('Location permission was denied');
+                    }
+                };
+
+                permissionWatcher = permission;
+            } catch (error) {
+                console.error('Failed to setup permission watcher:', error);
+            }
+        };
+
+        setupPermissionWatcher();
+
+        return () => {
+            if (permissionWatcher) {
+                permissionWatcher.onchange = null;
+            }
+        };
+    }, [isTracking, stopTracking]);
 
     const value = {
         currentLocation,
