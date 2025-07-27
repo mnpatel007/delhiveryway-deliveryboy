@@ -159,7 +159,7 @@ export const DeliveryProvider = ({ children }) => {
     const markPickedUp = async (orderId) => {
         try {
             setLoading(true);
-            const response = await axios.put(`${API_BASE_URL}/api/delivery/pickup/${orderId}`);
+            const response = await axios.put(`${API_BASE_URL}/api/delivery/pickup/${orderId}`, {});
 
             // Refresh active deliveries
             await fetchActiveDeliveries();
@@ -179,7 +179,7 @@ export const DeliveryProvider = ({ children }) => {
     const markDelivered = async (orderId) => {
         try {
             setLoading(true);
-            const response = await axios.put(`${API_BASE_URL}/api/delivery/deliver/${orderId}`);
+            const response = await axios.put(`${API_BASE_URL}/api/delivery/deliver/${orderId}`, {});
 
             // Refresh data
             await Promise.all([
