@@ -332,8 +332,8 @@ export default function OrdersPage() {
                                             </div>
                                         ))}
                                     </div>
-                                )
-                            }
+                                );
+                            })()}
                         </div>
                     )}
 
@@ -439,8 +439,8 @@ export default function OrdersPage() {
                                             );
                                         })}
                                     </div>
-                                )
-                            }
+                                );
+                            })()}
                         </div>
                     )}
                 </div>

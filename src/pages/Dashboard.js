@@ -24,6 +24,7 @@ export default function Dashboard() {
 
     const [showLocationPrompt, setShowLocationPrompt] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
+    const [localError, setLocalError] = useState(null);
 
     // Load initial data
     useEffect(() => {
@@ -64,7 +65,7 @@ export default function Dashboard() {
 
     const handleAcceptOrder = async (orderId) => {
         if (!currentLocation) {
-            setError('Location is required to accept orders. Please enable location services.');
+            setLocalError('Location is required to accept orders. Please enable location services.');
             return;
         }
 
@@ -72,14 +73,14 @@ export default function Dashboard() {
             const result = await acceptOrder(orderId, currentLocation);
             if (result.success) {
                 // Show success message and navigate
-                setError(null);
+                setLocalError(null);
                 navigate('/orders');
             } else {
-                setError(result.message);
+                setLocalError(result.message);
             }
         } catch (error) {
             console.error('Error accepting order:', error);
-            setError('Failed to accept order. Please try again.');
+            setLocalError('Failed to accept order. Please try again.');
         }
     };
 
@@ -141,6 +142,20 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
+
+                {/* Error Display */}
+                {localError && (
+                    <div className="error-banner">
+                        <span className="error-icon">⚠️</span>
+                        <span>{localError}</span>
+                        <button
+                            className="error-close"
+                            onClick={() => setLocalError(null)}
+                        >
+                            ×
+                        </button>
+                    </div>
+                )}
 
                 {/* Location Prompt */}
                 {showLocationPrompt && (
