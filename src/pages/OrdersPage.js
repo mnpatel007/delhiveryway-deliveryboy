@@ -183,6 +183,17 @@ export default function OrdersPage() {
                                                 </div>
 
                                                 <div className="address-section">
+                                                    <h5>🏪 Pickup Address:</h5>
+                                                    <p>
+                                                        {order.items && order.items[0]?.shopName && (
+                                                            <strong>{order.items[0].shopName}</strong>
+                                                        )}
+                                                        <br />
+                                                        {order.items && order.items[0]?.shopAddress || 'Pickup address not available'}
+                                                    </p>
+                                                </div>
+
+                                                <div className="address-section">
                                                     <h5>📍 Delivery Address:</h5>
                                                     <p>{order.deliveryAddress}</p>
                                                 </div>
@@ -270,6 +281,17 @@ export default function OrdersPage() {
                                                     <div className="customer-section">
                                                         <h4>👤 {order.customer?.name || 'Customer'}</h4>
                                                         <p>📞 {order.customer?.phone || 'No phone'}</p>
+                                                    </div>
+
+                                                    <div className="address-section">
+                                                        <h5>🏪 Pickup Address:</h5>
+                                                        <p>
+                                                            {order.items && order.items[0]?.shopName && (
+                                                                <strong>{order.items[0].shopName}</strong>
+                                                            )}
+                                                            <br />
+                                                            {order.items && order.items[0]?.shopAddress || 'Pickup address not available'}
+                                                        </p>
                                                     </div>
 
                                                     <div className="address-section">

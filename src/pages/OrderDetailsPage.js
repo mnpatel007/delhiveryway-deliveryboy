@@ -174,7 +174,10 @@ export default function OrderDetailsPage() {
                                         )}
                                     </span>
                                 </div>
-
+                                <div className="info-item">
+                                    <span className="label">Email:</span>
+                                    <span className="value">{order.customer?.email || 'Not provided'}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -186,19 +189,19 @@ export default function OrderDetailsPage() {
                         </div>
                         <div className="card-content">
                             {order.items && order.items.length > 0 && order.items[0].shopName ? (
-                                <div className="pickup-info">
-                                    <div className="shop-name">
-                                        <strong>{order.items[0].shopName}</strong>
+                                <div className="address-display">
+                                    <div className="shop-name" style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                                        {order.items[0].shopName}
                                     </div>
-                                    <div className="shop-address">
+                                    <p className="address-text">
                                         {order.items[0].shopAddress || order.items[0].shopLocation || 'Address not available'}
-                                    </div>
-                                    <div className="pickup-actions">
+                                    </p>
+                                    <div className="address-actions">
                                         <button
                                             className="btn btn-outline"
                                             onClick={() => openInGoogleMaps(order.items[0].shopAddress || order.items[0].shopName)}
                                         >
-                                            📍 View Shop Location
+                                            📍 View on Map
                                         </button>
                                         <button
                                             className="btn btn-primary"
@@ -256,29 +259,9 @@ export default function OrderDetailsPage() {
                                                     {item.name || item.productName || 'Product'}
                                                 </span>
                                                 <span className="item-quantity">Qty: {item.quantity || 1}</span>
-                                                {item.shopName && (
-                                                    <span className="item-shop">From: {item.shopName}</span>
-                                                )}
                                             </div>
-                                            <div className="item-price">₹{item.price || item.productPrice || (item.quantity * (item.unitPrice || 0)) || 0}</div>
                                         </div>
                                     ))}
-                                    <div className="items-total">
-                                        <div className="total-row">
-                                            <span className="total-label">Subtotal:</span>
-                                            <span className="total-amount">₹{order.totalAmount || 0}</span>
-                                        </div>
-                                        {order.deliveryCharge && (
-                                            <div className="total-row">
-                                                <span className="total-label">Delivery Charge:</span>
-                                                <span className="total-amount">₹{order.deliveryCharge}</span>
-                                            </div>
-                                        )}
-                                        <div className="total-row final-total">
-                                            <span className="total-label">Total:</span>
-                                            <span className="total-amount">₹{(order.totalAmount || 0) + (order.deliveryCharge || 0)}</span>
-                                        </div>
-                                    </div>
                                 </div>
                             ) : (
                                 <div className="no-items">
