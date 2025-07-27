@@ -16,6 +16,8 @@ const LocationButton = () => {
     const [isRequesting, setIsRequesting] = useState(false);
 
     const handleLocationToggle = async () => {
+        if (isRequesting) return; // Prevent multiple clicks
+
         if (permissionStatus === 'denied') {
             alert('Location access is denied. Please enable location services in your browser settings.');
             return;
@@ -28,7 +30,9 @@ const LocationButton = () => {
                 setIsRequesting(true);
                 try {
                     await requestLocationPermission();
-                    startTracking();
+                    if (!isTracking) { // Double check before starting
+                        startTracking();
+                    }
                 } catch (error) {
                     console.error('Location permission failed:', error);
                     alert('Location access is required for delivery tracking. Please enable location services.');
@@ -36,7 +40,9 @@ const LocationButton = () => {
                     setIsRequesting(false);
                 }
             } else {
-                startTracking();
+                if (!isTracking) { // Double check before starting
+                    startTracking();
+                }
             }
         }
     };

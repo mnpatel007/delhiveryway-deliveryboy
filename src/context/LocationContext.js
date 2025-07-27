@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { AuthContext } from './AuthContext';
 import axios from 'axios';
 
@@ -14,6 +14,8 @@ export const LocationProvider = ({ children }) => {
     const [watchId, setWatchId] = useState(null);
     const [locationHistory, setLocationHistory] = useState([]);
     const [permissionStatus, setPermissionStatus] = useState('prompt');
+    const lastServerUpdate = useRef(null);
+    const trackingInitialized = useRef(false);
 
     // Check location permission
     const checkLocationPermission = useCallback(async () => {
@@ -133,7 +135,10 @@ export const LocationProvider = ({ children }) => {
 
     // Start location tracking
     const startTracking = useCallback(() => {
-        if (!navigator.geolocation || isTracking) return;
+        if (!navigator.geolocation || isTracking) {
+            console.log('Location tracking already active or not supported');
+            return;
+        }
 
         console.log('Starting location tracking...');
         setIsTracking(true);
@@ -163,13 +168,14 @@ export const LocationProvider = ({ children }) => {
                 ]);
 
                 // Update server every 30 seconds or if moved significantly
-                const lastLocation = locationHistory[0];
-                const shouldUpdate = !lastLocation ||
-                    Date.now() - new Date(lastLocation.timestamp).getTime() > 30000 ||
-                    getDistance(lastLocation, location) > 50; // 50 meters
+                const now = Date.now();
+                const shouldUpdate = !lastServerUpdate.current ||
+                    now - lastServerUpdate.current > 30000 ||
+                    (currentLocation && getDistance(currentLocation, location) > 50); // 50 meters
 
                 if (shouldUpdate) {
                     updateLocationOnServer(location);
+                    lastServerUpdate.current = now;
                 }
             },
             (error) => {
@@ -250,14 +256,20 @@ export const LocationProvider = ({ children }) => {
         }
     }, []);
 
-    // Auto-start tracking when authenticated
+    // Auto-start tracking when authenticated (only once)
     useEffect(() => {
-        if (isAuthenticated && !isTracking) {
-            checkLocationPermission().then(() => {
-                startTracking();
+        if (isAuthenticated && !trackingInitialized.current) {
+            trackingInitialized.current = true;
+            checkLocationPermission().then((permission) => {
+                if (permission === 'granted' && !isTracking) {
+                    startTracking();
+                }
             });
-        } else if (!isAuthenticated && isTracking) {
-            stopTracking();
+        } else if (!isAuthenticated) {
+            trackingInitialized.current = false;
+            if (isTracking) {
+                stopTracking();
+            }
         }
 
         return () => {
@@ -265,7 +277,7 @@ export const LocationProvider = ({ children }) => {
                 stopTracking();
             }
         };
-    }, [isAuthenticated, isTracking, startTracking, stopTracking, checkLocationPermission]);
+    }, [isAuthenticated]); // Remove isTracking from dependencies to prevent loop
 
     // Check permission on mount
     useEffect(() => {
