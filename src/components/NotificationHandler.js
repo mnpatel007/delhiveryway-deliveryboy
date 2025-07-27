@@ -47,9 +47,12 @@ const NotificationHandler = () => {
                     );
                 }, 5000);
 
-                // Refresh data for certain notification types
+                // Refresh data for certain notification types (with debounce)
                 if (['new_order', 'status_update', 'order_cancelled'].includes(notification.type)) {
-                    refreshData();
+                    // Debounce refresh to prevent excessive calls
+                    setTimeout(() => {
+                        refreshData();
+                    }, 1000);
                 }
             });
         }

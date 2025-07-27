@@ -1,22 +1,52 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from './AuthContext';
+import axios from 'axios';
 
 export const LocationContext = createContext();
 
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+
 export const LocationProvider = ({ children }) => {
-    const { isAuthenticated, updateLocation } = useContext(AuthContext);
+    const { isAuthenticated, user } = useContext(AuthContext);
     const [currentLocation, setCurrentLocation] = useState(null);
     const [locationError, setLocationError] = useState(null);
     const [isTracking, setIsTracking] = useState(false);
     const [watchId, setWatchId] = useState(null);
+    const [locationHistory, setLocationHistory] = useState([]);
+    const [permissionStatus, setPermissionStatus] = useState('prompt');
 
-    // Get current position
-    const getCurrentPosition = () => {
+    // Check location permission
+    const checkLocationPermission = useCallback(async () => {
+        if (!navigator.permissions) {
+            return 'prompt';
+        }
+
+        try {
+            const permission = await navigator.permissions.query({ name: 'geolocation' });
+            setPermissionStatus(permission.state);
+            return permission.state;
+        } catch (error) {
+            console.error('Permission check failed:', error);
+            return 'prompt';
+        }
+    }, []);
+
+    // Mobile-optimized location options
+    const getLocationOptions = (highAccuracy = true) => ({
+        enableHighAccuracy: highAccuracy,
+        timeout: highAccuracy ? 15000 : 10000, // Longer timeout for high accuracy
+        maximumAge: highAccuracy ? 30000 : 60000 // Cache for 30s/60s
+    });
+
+    // Get current position with mobile optimization
+    const getCurrentPosition = useCallback((highAccuracy = true) => {
         return new Promise((resolve, reject) => {
             if (!navigator.geolocation) {
                 reject(new Error('Geolocation is not supported by this browser'));
                 return;
             }
+
+            const options = getLocationOptions(highAccuracy);
 
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -24,131 +54,191 @@ export const LocationProvider = ({ children }) => {
                         lat: position.coords.latitude,
                         lng: position.coords.longitude,
                         accuracy: position.coords.accuracy,
-                        timestamp: new Date().toISOString()
-                    };
-                    resolve(location);
-                },
-                (error) => {
-                    let errorMessage = 'Failed to get location';
-                    switch (error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMessage = 'Location access denied by user';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMessage = 'Location information unavailable';
-                            break;
-                        case error.TIMEOUT:
-                            errorMessage = 'Location request timed out';
-                            break;
-                        default:
-                            errorMessage = 'Unknown location error';
-                            break;
-                    }
-                    reject(new Error(errorMessage));
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 60000
-                }
-            );
-        });
-    };
-
-    // Start location tracking
-    const startTracking = async () => {
-        if (!navigator.geolocation) {
-            setLocationError('Geolocation is not supported by this browser');
-            return false;
-        }
-
-        try {
-            // Get initial position
-            const initialLocation = await getCurrentPosition();
-            setCurrentLocation(initialLocation);
-            setLocationError(null);
-
-            // Update backend with initial location
-            if (isAuthenticated) {
-                await updateLocation(initialLocation);
-            }
-
-            // Start watching position
-            const id = navigator.geolocation.watchPosition(
-                async (position) => {
-                    const location = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                        accuracy: position.coords.accuracy,
+                        altitude: position.coords.altitude,
+                        heading: position.coords.heading,
+                        speed: position.coords.speed,
                         timestamp: new Date().toISOString()
                     };
 
                     setCurrentLocation(location);
+                    setLocationError(null);
 
-                    // Update backend every 30 seconds or if moved significantly
-                    const lastUpdate = currentLocation?.timestamp;
-                    const timeDiff = lastUpdate ? new Date() - new Date(lastUpdate) : Infinity;
-                    const distanceMoved = lastUpdate ? calculateDistance(
-                        currentLocation.lat,
-                        currentLocation.lng,
-                        location.lat,
-                        location.lng
-                    ) : Infinity;
+                    // Add to history
+                    setLocationHistory(prev => [
+                        location,
+                        ...prev.slice(0, 49) // Keep last 50 locations
+                    ]);
 
-                    if (isAuthenticated && (timeDiff > 30000 || distanceMoved > 50)) {
-                        await updateLocation(location);
-                    }
+                    resolve(location);
                 },
                 (error) => {
-                    console.error('Location tracking error:', error);
-                    setLocationError(error.message);
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 30000
-                }
-            );
+                    let errorMessage = 'Failed to get location';
+                    let shouldRetry = false;
 
-            setWatchId(id);
-            setIsTracking(true);
-            return true;
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Location access denied. Please enable location services.';
+                            setPermissionStatus('denied');
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location unavailable. Please check your GPS.';
+                            shouldRetry = true;
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Location request timed out. Retrying...';
+                            shouldRetry = true;
+                            break;
+                        default:
+                            errorMessage = 'Unknown location error';
+                            shouldRetry = true;
+                            break;
+                    }
+
+                    setLocationError(errorMessage);
+
+                    // Retry with lower accuracy if high accuracy failed
+                    if (shouldRetry && highAccuracy) {
+                        console.log('Retrying with lower accuracy...');
+                        setTimeout(() => {
+                            getCurrentPosition(false).then(resolve).catch(reject);
+                        }, 1000);
+                    } else {
+                        reject(new Error(errorMessage));
+                    }
+                },
+                options
+            );
+        });
+    }, []);
+
+    // Update location on server
+    const updateLocationOnServer = useCallback(async (location) => {
+        if (!isAuthenticated || !user?.id) return;
+
+        try {
+            await axios.put(`${API_BASE_URL}/api/delivery/location`, {
+                lat: location.lat,
+                lng: location.lng,
+                accuracy: location.accuracy,
+                timestamp: location.timestamp
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
         } catch (error) {
-            setLocationError(error.message);
-            return false;
+            console.error('Failed to update location on server:', error);
         }
-    };
+    }, [isAuthenticated, user]);
+
+    // Start location tracking
+    const startTracking = useCallback(() => {
+        if (!navigator.geolocation || isTracking) return;
+
+        console.log('Starting location tracking...');
+        setIsTracking(true);
+        setLocationError(null);
+
+        const options = getLocationOptions(true);
+
+        const id = navigator.geolocation.watchPosition(
+            (position) => {
+                const location = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    altitude: position.coords.altitude,
+                    heading: position.coords.heading,
+                    speed: position.coords.speed,
+                    timestamp: new Date().toISOString()
+                };
+
+                setCurrentLocation(location);
+                setLocationError(null);
+
+                // Add to history
+                setLocationHistory(prev => [
+                    location,
+                    ...prev.slice(0, 49)
+                ]);
+
+                // Update server every 30 seconds or if moved significantly
+                const lastLocation = locationHistory[0];
+                const shouldUpdate = !lastLocation ||
+                    Date.now() - new Date(lastLocation.timestamp).getTime() > 30000 ||
+                    getDistance(lastLocation, location) > 50; // 50 meters
+
+                if (shouldUpdate) {
+                    updateLocationOnServer(location);
+                }
+            },
+            (error) => {
+                console.error('Location tracking error:', error);
+                let errorMessage = 'Location tracking failed';
+
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage = 'Location permission denied';
+                        setPermissionStatus('denied');
+                        setIsTracking(false);
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage = 'Location unavailable';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage = 'Location timeout';
+                        break;
+                }
+
+                setLocationError(errorMessage);
+            },
+            options
+        );
+
+        setWatchId(id);
+    }, [isTracking, locationHistory, updateLocationOnServer]);
 
     // Stop location tracking
-    const stopTracking = () => {
+    const stopTracking = useCallback(() => {
         if (watchId) {
             navigator.geolocation.clearWatch(watchId);
             setWatchId(null);
         }
         setIsTracking(false);
-    };
+        console.log('Location tracking stopped');
+    }, [watchId]);
 
-    // Calculate distance between two points (in meters)
-    const calculateDistance = (lat1, lng1, lat2, lng2) => {
+    // Calculate distance between two points (Haversine formula)
+    const getDistance = (pos1, pos2) => {
         const R = 6371e3; // Earth's radius in meters
-        const φ1 = lat1 * Math.PI / 180;
-        const φ2 = lat2 * Math.PI / 180;
-        const Δφ = (lat2 - lat1) * Math.PI / 180;
-        const Δλ = (lng2 - lng1) * Math.PI / 180;
+        const φ1 = pos1.lat * Math.PI / 180;
+        const φ2 = pos2.lat * Math.PI / 180;
+        const Δφ = (pos2.lat - pos1.lat) * Math.PI / 180;
+        const Δλ = (pos2.lng - pos1.lng) * Math.PI / 180;
 
         const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
             Math.cos(φ1) * Math.cos(φ2) *
             Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-        return R * c;
+        return R * c; // Distance in meters
     };
 
-    // Get address from coordinates (reverse geocoding)
-    const getAddressFromCoords = async (lat, lng) => {
+    // Request location permission
+    const requestLocationPermission = useCallback(async () => {
         try {
-            // Using a simple reverse geocoding service
-            // In production, you might want to use Google Maps Geocoding API
+            const location = await getCurrentPosition(true);
+            setPermissionStatus('granted');
+            return location;
+        } catch (error) {
+            console.error('Location permission request failed:', error);
+            throw error;
+        }
+    }, [getCurrentPosition]);
+
+    // Get address from coordinates (reverse geocoding)
+    const getAddressFromCoords = useCallback(async (lat, lng) => {
+        try {
             const response = await fetch(
                 `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
             );
@@ -158,23 +248,14 @@ export const LocationProvider = ({ children }) => {
             console.error('Reverse geocoding failed:', error);
             return 'Unknown location';
         }
-    };
-
-    // Request location permission
-    const requestLocationPermission = async () => {
-        try {
-            const permission = await navigator.permissions.query({ name: 'geolocation' });
-            return permission.state;
-        } catch (error) {
-            console.error('Permission query failed:', error);
-            return 'prompt';
-        }
-    };
+    }, []);
 
     // Auto-start tracking when authenticated
     useEffect(() => {
         if (isAuthenticated && !isTracking) {
-            startTracking();
+            checkLocationPermission().then(() => {
+                startTracking();
+            });
         } else if (!isAuthenticated && isTracking) {
             stopTracking();
         }
@@ -184,18 +265,26 @@ export const LocationProvider = ({ children }) => {
                 stopTracking();
             }
         };
-    }, [isAuthenticated]);
+    }, [isAuthenticated, isTracking, startTracking, stopTracking, checkLocationPermission]);
+
+    // Check permission on mount
+    useEffect(() => {
+        checkLocationPermission();
+    }, [checkLocationPermission]);
 
     const value = {
         currentLocation,
         locationError,
         isTracking,
+        locationHistory,
+        permissionStatus,
         getCurrentPosition,
         startTracking,
         stopTracking,
-        calculateDistance,
+        getDistance,
         getAddressFromCoords,
         requestLocationPermission,
+        checkLocationPermission,
         setLocationError
     };
 

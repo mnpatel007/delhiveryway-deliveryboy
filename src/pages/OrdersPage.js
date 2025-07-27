@@ -61,7 +61,9 @@ export default function OrdersPage() {
         const result = await markPickedUp(orderId);
         setProcessingOrder(null);
 
-        if (!result.success) {
+        if (result.success) {
+            alert('Order marked as picked up successfully!');
+        } else {
             alert(result.message);
         }
     };

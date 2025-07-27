@@ -220,16 +220,31 @@ export default function OrderDetailsPage() {
                                     {order.items.map((item, index) => (
                                         <div key={index} className="item-row">
                                             <div className="item-info">
-                                                <span className="item-name">{item.name}</span>
-                                                <span className="item-quantity">Qty: {item.quantity}</span>
+                                                <span className="item-name">
+                                                    {item.name || item.productName || 'Product'}
+                                                </span>
+                                                <span className="item-quantity">Qty: {item.quantity || 1}</span>
+                                                {item.shopName && (
+                                                    <span className="item-shop">From: {item.shopName}</span>
+                                                )}
                                             </div>
-                                            <div className="item-price">₹{item.price}</div>
+                                            <div className="item-price">₹{item.price || 0}</div>
                                         </div>
                                     ))}
                                     <div className="items-total">
                                         <div className="total-row">
-                                            <span className="total-label">Total Amount:</span>
-                                            <span className="total-amount">₹{order.totalAmount}</span>
+                                            <span className="total-label">Subtotal:</span>
+                                            <span className="total-amount">₹{order.totalAmount || 0}</span>
+                                        </div>
+                                        {order.deliveryCharge && (
+                                            <div className="total-row">
+                                                <span className="total-label">Delivery Charge:</span>
+                                                <span className="total-amount">₹{order.deliveryCharge}</span>
+                                            </div>
+                                        )}
+                                        <div className="total-row final-total">
+                                            <span className="total-label">Total:</span>
+                                            <span className="total-amount">₹{(order.totalAmount || 0) + (order.deliveryCharge || 0)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -237,6 +252,7 @@ export default function OrderDetailsPage() {
                                 <div className="no-items">
                                     <span className="no-items-icon">📦</span>
                                     <p>No item details available</p>
+                                    <small>Order ID: {order._id}</small>
                                 </div>
                             )}
                         </div>

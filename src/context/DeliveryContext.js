@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import axios from 'axios';
 import { AuthContext } from './AuthContext';
 import { mockAvailableOrders, mockActiveDeliveries, mockEarnings } from '../utils/mockData';
@@ -221,17 +221,37 @@ export const DeliveryProvider = ({ children }) => {
         }
     };
 
-    // Refresh all data
-    const refreshData = async () => {
-        if (!isAuthenticated) return;
+    // Debounce utility function
+    const debounce = useCallback((func, wait) => {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }, []);
 
-        await Promise.all([
-            fetchAvailableOrders(),
-            fetchActiveDeliveries(),
-            fetchEarnings(),
-            fetchDeliveryHistory()
-        ]);
-    };
+    // Refresh all data with debouncing
+    const refreshData = useCallback(
+        debounce(async () => {
+            if (!isAuthenticated) return;
+
+            try {
+                await Promise.all([
+                    fetchAvailableOrders(),
+                    fetchActiveDeliveries(),
+                    fetchEarnings(),
+                    fetchDeliveryHistory()
+                ]);
+            } catch (error) {
+                console.error('Refresh data error:', error);
+            }
+        }, 1000), // Debounce for 1 second
+        [isAuthenticated, fetchAvailableOrders, fetchActiveDeliveries, fetchEarnings, fetchDeliveryHistory, debounce]
+    );
 
     // Initial data fetch
     useEffect(() => {

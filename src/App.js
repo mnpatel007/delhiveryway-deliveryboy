@@ -19,9 +19,11 @@ import OrderDetailsPage from './pages/OrderDetailsPage';
 import Navbar from './components/Navbar';
 import LoadingSpinner from './components/LoadingSpinner';
 import NotificationHandler from './components/NotificationHandler';
+import LocationButton from './components/LocationButton';
 
 // Styles
 import './App.css';
+import './styles/mobile.css';
 
 // Private Route Component
 const PrivateRoute = ({ children }) => {
@@ -59,6 +61,7 @@ const Layout = ({ children }) => {
       <main className={shouldShowNavbar ? 'main-content with-navbar' : 'main-content'}>
         {children}
       </main>
+      {shouldShowNavbar && <LocationButton />}
     </div>
   );
 };
