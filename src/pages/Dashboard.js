@@ -254,7 +254,8 @@ export default function Dashboard() {
                                         <div className="order-details">
                                             <div className="customer-info">
                                                 <h4>{order.customer?.name}</h4>
-                                                <p>{order.deliveryAddress}</p>
+                                                <p>Pickup: {order.shopAddress || 'Not available'}</p>
+                                                <p>Delivery: {order.deliveryAddress}</p>
                                             </div>
                                             <div className="order-actions">
                                                 <button
