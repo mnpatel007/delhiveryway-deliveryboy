@@ -1,42 +1,32 @@
 import React from 'react';
+import { Box, Typography, Paper, Divider, LinearProgress } from '@mui/material';
+import { MdAttachMoney } from 'react-icons/md';
 
-const StatCard = ({ icon, label, value, color }) => (
-  <div className="stat-card" style={{ borderLeft: `4px solid ${color}` }}>
-    <div className="stat-icon">{icon}</div>
-    <div className="stat-content">
-      <h3>{value}</h3>
-      <p>{label}</p>
-    </div>
-  </div>
-);
-
-export default React.memo(function EarningsSection({ earnings, activeDeliveries }) {
+export default React.memo(function EarningsSection({ darkMode, earnings }) {
+  const target = 5000;
   return (
-    <div className="stats-grid">
-      <StatCard
-        icon="💰"
-        label="Today's Earnings"
-        value={`₹${earnings.today?.toFixed(2) || '0.00'}`}
-        color="#4caf50"
-      />
-      <StatCard
-        icon="📦"
-        label="Today's Deliveries"
-        value={earnings.todayDeliveries || 0}
-        color="#2196f3"
-      />
-      <StatCard
-        icon="🎯"
-        label="Active Orders"
-        value={activeDeliveries || 0}
-        color="#ff9800"
-      />
-      <StatCard
-        icon="📈"
-        label="This Week"
-        value={`₹${earnings.week?.toFixed(2) || '0.00'}`}
-        color="#9c27b0"
-      />
-    </div>
+    <Box>
+      <Typography variant="h6" mb={2}><MdAttachMoney /> Earnings</Typography>
+      <Paper elevation={3} sx={{ p: 3, mb: 2, bgcolor: darkMode ? '#23272f' : '#fff' }}>
+        <Typography variant="subtitle1">Today</Typography>
+        <Typography variant="h4" color="success.main">₹{earnings.today.toFixed(2)}</Typography>
+        <Divider sx={{ my: 2 }} />
+        <Typography variant="subtitle1">This Week</Typography>
+        <Typography variant="h5">₹{earnings.week.toFixed(2)}</Typography>
+        <Divider sx={{ my: 2 }} />
+        <Typography variant="subtitle1">This Month</Typography>
+        <Typography variant="h5">₹{earnings.month.toFixed(2)}</Typography>
+        <Divider sx={{ my: 2 }} />
+        <Typography variant="subtitle2">Monthly Target</Typography>
+        <LinearProgress
+          variant="determinate"
+          value={Math.min((earnings.month / target) * 100, 100)}
+          sx={{ height: 10, borderRadius: 5, mb: 1 }}
+        />
+        <Typography variant="body2">
+          ₹{earnings.month.toFixed(2)} / ₹{target}
+        </Typography>
+      </Paper>
+    </Box>
   );
 });
