@@ -1,56 +1,88 @@
-import React, { useEffect, useRef } from 'react';
-import '../styles/glass.css';
+import React, { useEffect, useRef, useState } from 'react';
+import './MapComponent.css';
 
-export default React.memo(function MapComponent({
-    shopLocation,
-    deliveryLocation,
-    currentLocation,
-    directions
-}) {
+const MapComponent = ({ origin, destination }) => {
     const mapRef = useRef(null);
-    const mapInstance = useRef(null);
-    const dirRenderer = useRef(null);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        if (!window.google || !mapRef.current) return;
+        if (!window.google) {
+            setError('Google Maps API failed to load.');
+            return;
+        }
 
-        mapInstance.current = new window.google.maps.Map(mapRef.current, {
-            zoom: 14,
-            center: currentLocation || shopLocation,
-            styles: [
-                { elementType: 'geometry', stylers: [{ color: '#212121' }] },
-                { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
-                { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] }
-            ]
-        });
+        if (!mapRef.current) {
+            setError('Map container not found.');
+            return;
+        }
 
-        dirRenderer.current = new window.google.maps.DirectionsRenderer({
-            map: mapInstance.current,
-            suppressMarkers: true,
-            polylineOptions: { strokeColor: '#00F5A0', strokeWeight: 5 }
-        });
+        if (!origin || !destination) {
+            setError('Origin or destination is missing.');
+            return;
+        }
 
-        // markers
-        shopLocation && new window.google.maps.Marker({
-            position: shopLocation,
-            map: mapInstance.current,
-            icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
-        });
+        try {
+            const map = new window.google.maps.Map(mapRef.current, {
+                center: origin,
+                zoom: 12,
+                disableDefaultUI: true,
+            });
 
-        deliveryLocation && new window.google.maps.Marker({
-            position: deliveryLocation,
-            map: mapInstance.current,
-            icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
-        });
+            const directionsService = new window.google.maps.DirectionsService();
+            const directionsRenderer = new window.google.maps.DirectionsRenderer({
+                suppressMarkers: true,
+                polylineOptions: {
+                    strokeColor: '#1a73e8',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 6,
+                },
+            });
 
-        currentLocation && new window.google.maps.Marker({
-            position: currentLocation,
-            map: mapInstance.current,
-            icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-        });
+            directionsRenderer.setMap(map);
 
-        if (directions) dirRenderer.current.setDirections(directions);
-    }, [shopLocation, deliveryLocation, currentLocation, directions]);
+            const request = {
+                origin,
+                destination,
+                travelMode: 'DRIVING',
+            };
 
-    return <div ref={mapRef} className="map" />;
-});
+            directionsService.route(request, (result, status) => {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(result);
+
+                    // Custom markers
+                    new window.google.maps.Marker({
+                        position: origin,
+                        map: map,
+                        title: 'Origin',
+                        icon: {
+                            url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                        },
+                    });
+
+                    new window.google.maps.Marker({
+                        position: destination,
+                        map: map,
+                        title: 'Destination',
+                        icon: {
+                            url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                        },
+                    });
+                } else {
+                    setError(`Directions request failed due to ${status}`);
+                }
+            });
+        } catch (e) {
+            setError('An error occurred while rendering the map.');
+            console.error(e);
+        }
+    }, [origin, destination]);
+
+    if (error) {
+        return <div className="map-error">Error: {error}</div>;
+    }
+
+    return <div ref={mapRef} className="map-container" />;
+};
+
+export default MapComponent;
