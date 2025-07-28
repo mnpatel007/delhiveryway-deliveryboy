@@ -508,6 +508,126 @@
     }
 }
 
+/* OTP Modal Styles */
+.otp-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.otp-modal {
+    background: white;
+    border-radius: 12px;
+    padding: 0;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.otp-modal-header {
+    padding: 24px 24px 16px 24px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+.otp-modal-header h3 {
+    margin: 0 0 8px 0;
+    color: #333;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.otp-modal-header p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.otp-modal-content {
+    padding: 24px;
+    text-align: center;
+}
+
+.otp-input {
+    width: 100%;
+    max-width: 200px;
+    padding: 16px;
+    font-size: 1.5rem;
+    text-align: center;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    letter-spacing: 8px;
+    font-weight: 600;
+    transition: border-color 0.3s ease;
+}
+
+.otp-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.otp-modal-actions {
+    padding: 16px 24px 24px 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.otp-modal-actions .btn {
+    flex: 1;
+    max-width: 140px;
+}
+
+/* Mobile responsive for OTP modal */
+@media (max-width: 480px) {
+    .otp-modal {
+        margin: 20px;
+        max-width: none;
+    }
+
+    .otp-modal-header,
+    .otp-modal-content,
+    .otp-modal-actions {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .otp-input {
+        font-size: 1.3rem;
+        letter-spacing: 6px;
+    }
+
+    .otp-modal-actions {
+        flex-direction: column;
+    }
+
+    .otp-modal-actions .btn {
+        max-width: none;
+    }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
 
@@ -520,5 +640,9 @@
     .btn,
     .tab-button {
         transition: none;
+    }
+
+    .otp-modal {
+        animation: none;
     }
 }

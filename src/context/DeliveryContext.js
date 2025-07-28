@@ -203,13 +203,19 @@ export const DeliveryProvider = ({ children }) => {
         }
     };
 
-    // Mark order as delivered
-    const markDelivered = async (orderId) => {
+    // Verify OTP and mark order as delivered
+    const markDelivered = async (orderId, otp) => {
         try {
             setLoading(true);
             setError(null);
 
-            const response = await axios.put(`${API_BASE_URL}/api/delivery/deliver/${orderId}`, {});
+            if (!otp) {
+                throw new Error('OTP is required');
+            }
+
+            const response = await axios.put(`${API_BASE_URL}/api/delivery/deliver/${orderId}`, {
+                otp: otp
+            });
 
             // Refresh data
             await Promise.all([
@@ -218,17 +224,19 @@ export const DeliveryProvider = ({ children }) => {
                 fetchDeliveryHistory()
             ]);
 
-            return { success: true, message: response.data.message || 'Order delivered successfully', earnings: response.data.earnings };
+            return { success: true, message: response.data.message || 'Order delivered successfully!', earnings: response.data.earnings };
         } catch (error) {
-            console.error('Failed to mark as delivered:', error);
-            let errorMessage = 'Failed to mark as delivered';
+            console.error('Failed to verify OTP and deliver:', error);
+            let errorMessage = 'Failed to verify OTP';
 
-            if (error.response?.status === 404) {
-                errorMessage = 'Order not found or not assigned to you';
-            } else if (error.response?.status === 400) {
-                errorMessage = error.response.data.message || 'Invalid order status';
+            if (error.response?.status === 400) {
+                errorMessage = error.response.data.message || 'Invalid OTP';
+            } else if (error.response?.status === 404) {
+                errorMessage = 'Order not found or not in correct status';
             } else if (error.response?.status >= 500) {
                 errorMessage = 'Server error. Please try again.';
+            } else if (error.message === 'OTP is required') {
+                errorMessage = 'Please enter the OTP';
             }
 
             setError(errorMessage);

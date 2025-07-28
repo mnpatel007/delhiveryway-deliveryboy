@@ -14,6 +14,8 @@ export default function OrderDetailsPage() {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
+    const [showOTPInput, setShowOTPInput] = useState(false);
+    const [otp, setOtp] = useState('');
 
     useEffect(() => {
         // Find the order in active deliveries
@@ -32,17 +34,36 @@ export default function OrderDetailsPage() {
         }
     };
 
-    const handleMarkDelivered = async () => {
+    const handleMarkDelivered = () => {
+        if (order?.status === 'picked_up') {
+            setShowOTPInput(true);
+        }
+    };
+
+    const handleOTPSubmit = async () => {
+        if (!otp.trim()) {
+            alert('Please enter the OTP');
+            return;
+        }
+
         setProcessing(true);
-        const result = await markDelivered(orderId);
+        const result = await markDelivered(orderId, otp);
         setProcessing(false);
 
         if (result.success) {
-            alert(`Order delivered! You earned ₹${result.earnings || 30}`);
+            alert(`Order delivered successfully! You earned ₹${result.earnings || 30}`);
             navigate('/orders');
         } else {
             alert(result.message);
         }
+
+        setShowOTPInput(false);
+        setOtp('');
+    };
+
+    const handleCancelOTP = () => {
+        setShowOTPInput(false);
+        setOtp('');
     };
 
     const openInGoogleMaps = (address) => {
@@ -351,6 +372,45 @@ export default function OrderDetailsPage() {
                                 </>
                             )}
                         </button>
+                    </div>
+                )}
+
+                {/* OTP Input Modal */}
+                {showOTPInput && (
+                    <div className="otp-modal-overlay">
+                        <div className="otp-modal">
+                            <div className="otp-modal-header">
+                                <h3>🔐 Enter Delivery OTP</h3>
+                                <p>Please ask the customer for the OTP they received</p>
+                            </div>
+                            <div className="otp-modal-content">
+                                <input
+                                    type="text"
+                                    placeholder="Enter 4-digit OTP"
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                                    maxLength="4"
+                                    className="otp-input"
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="otp-modal-actions">
+                                <button
+                                    className="btn btn-outline"
+                                    onClick={handleCancelOTP}
+                                    disabled={processing}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className="btn btn-success"
+                                    onClick={handleOTPSubmit}
+                                    disabled={processing || otp.length !== 4}
+                                >
+                                    {processing ? 'Verifying...' : 'Confirm Delivery'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
