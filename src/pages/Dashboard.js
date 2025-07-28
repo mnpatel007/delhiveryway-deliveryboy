@@ -308,7 +308,8 @@ export default function Dashboard() {
                                         <div className="order-details">
                                             <div className="customer-info">
                                                 <h4>{order.customer?.name}</h4>
-                                                <p>{order.deliveryAddress}</p>
+                                                <p>Pickup: {order.items[0]?.shopAddress || 'Not available'}</p>
+                                                <p>Delivery: {order.deliveryAddress}</p>
                                                 <div className="distance">
                                                     📍 {(() => {
                                                         if (order.distance) return `${order.distance.toFixed(1)} km`;
