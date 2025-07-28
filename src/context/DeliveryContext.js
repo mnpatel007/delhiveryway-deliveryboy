@@ -13,14 +13,12 @@ export const DeliveryProvider = ({ children }) => {
     const [activeDeliveries, setActiveDeliveries] = useState([]);
     const [deliveryHistory, setDeliveryHistory] = useState([]);
     const [earnings, setEarnings] = useState({
-        totalEarnings: 0,
-        totalDeliveries: 0,
-        todayEarnings: 0,
-        weekEarnings: 0,
-        monthEarnings: 0,
+        today: 0,
+        week: 0,
+        month: 0,
+        total: 0,
         todayDeliveries: 0,
-        weekDeliveries: 0,
-        monthDeliveries: 0
+        totalDeliveries: 0,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);

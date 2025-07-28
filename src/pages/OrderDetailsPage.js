@@ -194,20 +194,14 @@ export default function OrderDetailsPage() {
                                         {order.items[0].shopName}
                                     </div>
                                     <p className="address-text">
-                                        {order.items[0].shopAddress || order.items[0].shopLocation || 'Address not available'}
+                                        {order.items[0].shopAddress || 'Address not available'}
                                     </p>
                                     <div className="address-actions">
                                         <button
-                                            className="btn btn-outline"
-                                            onClick={() => openInGoogleMaps(order.items[0].shopAddress || order.items[0].shopName)}
-                                        >
-                                            📍 View on Map
-                                        </button>
-                                        <button
                                             className="btn btn-primary"
-                                            onClick={() => getDirections(order.items[0].shopAddress || order.items[0].shopName)}
+                                            onClick={() => navigate(`/map/${order._id}`)}
                                         >
-                                            🧭 Get Directions
+                                            🗺️ View on Map
                                         </button>
                                     </div>
                                 </div>
@@ -227,17 +221,10 @@ export default function OrderDetailsPage() {
                                 <p className="address-text">{order.deliveryAddress}</p>
                                 <div className="address-actions">
                                     <button
-                                        className="btn btn-outline"
-                                        onClick={() => openInGoogleMaps(order.deliveryAddress)}
-                                    >
-                                        📍 View on Map
-                                    </button>
-                                    <button
                                         className="btn btn-primary"
-                                        onClick={() => getDirections(order.deliveryAddress)}
-                                        disabled={!currentLocation}
+                                        onClick={() => navigate(`/map/${order._id}`)}
                                     >
-                                        🧭 Get Directions
+                                        🗺️ View on Map
                                     </button>
                                 </div>
                             </div>

@@ -130,7 +130,7 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/map"
+        path="/map/:orderId"
         element={
           <PrivateRoute>
             <MapPage />

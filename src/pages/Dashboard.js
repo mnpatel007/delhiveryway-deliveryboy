@@ -5,6 +5,7 @@ import { DeliveryContext } from '../context/DeliveryContext';
 import { LocationContext } from '../context/LocationContext';
 import { SocketContext } from '../context/SocketContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EarningsSection from './dashboard/EarningsSection';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -198,40 +199,8 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                {/* Stats Cards */}
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-icon">💰</div>
-                        <div className="stat-content">
-                            <h3>₹{earnings.todayEarnings}</h3>
-                            <p>Today's Earnings</p>
-                        </div>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-icon">📦</div>
-                        <div className="stat-content">
-                            <h3>{earnings.todayDeliveries}</h3>
-                            <p>Today's Deliveries</p>
-                        </div>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-icon">🎯</div>
-                        <div className="stat-content">
-                            <h3>{activeDeliveries.length}</h3>
-                            <p>Active Orders</p>
-                        </div>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-icon">📈</div>
-                        <div className="stat-content">
-                            <h3>₹{earnings.weekEarnings}</h3>
-                            <p>This Week</p>
-                        </div>
-                    </div>
-                </div>
+                {/* Earnings Section */}
+                <EarningsSection earnings={earnings} activeDeliveries={activeDeliveries.length} />
 
                 {/* Main Content */}
                 <div className="dashboard-content">
