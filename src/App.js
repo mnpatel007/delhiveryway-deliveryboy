@@ -12,7 +12,6 @@ import Dashboard from './pages/Dashboard';
 import OrdersPage from './pages/OrdersPage';
 import EarningsPage from './pages/EarningsPage';
 import ProfilePage from './pages/ProfilePage';
-import MapPage from './pages/MapPage';
 import OrderDetailsPage from './pages/OrderDetailsPage';
 
 // Components
@@ -126,14 +125,6 @@ const AppRoutes = () => {
         element={
           <PrivateRoute>
             <ProfilePage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/map"
-        element={
-          <PrivateRoute>
-            <MapPage />
           </PrivateRoute>
         }
       />
