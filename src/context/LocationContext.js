@@ -134,75 +134,92 @@ export const LocationProvider = ({ children }) => {
     }, [isAuthenticated, deliveryBoy]);
 
     // Start location tracking
-    const startTracking = useCallback(() => {
-        if (!navigator.geolocation || isTracking) {
-            console.log('Location tracking already active or not supported');
-            return;
+    const startTracking = useCallback(async () => {
+        if (!navigator.geolocation) {
+            console.log('Geolocation not supported');
+            return false;
         }
 
-        console.log('Starting location tracking...');
-        setIsTracking(true);
-        setLocationError(null);
+        if (isTracking) {
+            console.log('Location tracking already active');
+            return true;
+        }
 
-        const options = getLocationOptions(true);
+        try {
+            console.log('Starting location tracking...');
 
-        const id = navigator.geolocation.watchPosition(
-            (position) => {
-                const location = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                    accuracy: position.coords.accuracy,
-                    altitude: position.coords.altitude,
-                    heading: position.coords.heading,
-                    speed: position.coords.speed,
-                    timestamp: new Date().toISOString()
-                };
+            // First get current position to check permissions
+            await getCurrentPosition(true);
 
-                setCurrentLocation(location);
-                setLocationError(null);
+            setIsTracking(true);
+            setLocationError(null);
+            setPermissionStatus('granted');
 
-                // Add to history
-                setLocationHistory(prev => [
-                    location,
-                    ...prev.slice(0, 49)
-                ]);
+            const options = getLocationOptions(true);
 
-                // Update server every 30 seconds or if moved significantly
-                const now = Date.now();
-                const shouldUpdate = !lastServerUpdate.current ||
-                    now - lastServerUpdate.current > 30000 ||
-                    (currentLocation && getDistance(currentLocation, location) > 50); // 50 meters
+            const id = navigator.geolocation.watchPosition(
+                (position) => {
+                    const location = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        altitude: position.coords.altitude,
+                        heading: position.coords.heading,
+                        speed: position.coords.speed,
+                        timestamp: new Date().toISOString()
+                    };
 
-                if (shouldUpdate) {
-                    updateLocationOnServer(location);
-                    lastServerUpdate.current = now;
-                }
-            },
-            (error) => {
-                console.error('Location tracking error:', error);
-                let errorMessage = 'Location tracking failed';
+                    setCurrentLocation(location);
+                    setLocationError(null);
 
-                switch (error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMessage = 'Location permission denied';
-                        setPermissionStatus('denied');
-                        setIsTracking(false);
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        errorMessage = 'Location unavailable';
-                        break;
-                    case error.TIMEOUT:
-                        errorMessage = 'Location timeout';
-                        break;
-                }
+                    // Add to history
+                    setLocationHistory(prev => [
+                        location,
+                        ...prev.slice(0, 49)
+                    ]);
 
-                setLocationError(errorMessage);
-            },
-            options
-        );
+                    // Update server every 30 seconds or if moved significantly
+                    const now = Date.now();
+                    const shouldUpdate = !lastServerUpdate.current ||
+                        now - lastServerUpdate.current > 30000 ||
+                        (currentLocation && getDistance(currentLocation, location) > 50); // 50 meters
 
-        setWatchId(id);
-    }, [isTracking, locationHistory, updateLocationOnServer]);
+                    if (shouldUpdate) {
+                        updateLocationOnServer(location);
+                        lastServerUpdate.current = now;
+                    }
+                },
+                (error) => {
+                    console.error('Location tracking error:', error);
+                    let errorMessage = 'Location tracking failed';
+
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Location permission denied';
+                            setPermissionStatus('denied');
+                            setIsTracking(false);
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location unavailable';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Location timeout';
+                            break;
+                    }
+
+                    setLocationError(errorMessage);
+                },
+                options
+            );
+
+            setWatchId(id);
+            return true;
+        } catch (error) {
+            console.error('Failed to start location tracking:', error);
+            setIsTracking(false);
+            return false;
+        }
+    }, [isTracking, getCurrentPosition, updateLocationOnServer, currentLocation, getDistance]);
 
     // Stop location tracking
     const stopTracking = useCallback(() => {

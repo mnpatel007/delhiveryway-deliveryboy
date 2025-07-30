@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import axios from 'axios';
 import { AuthContext } from './AuthContext';
-import { mockAvailableOrders, mockActiveDeliveries, mockEarnings } from '../utils/mockData';
+
 
 export const DeliveryContext = createContext();
 
@@ -29,13 +29,6 @@ export const DeliveryProvider = ({ children }) => {
     const fetchAvailableOrders = async (retryCount = 0) => {
         if (!isAuthenticated) return;
 
-        // Use mock data if enabled
-        if (process.env.REACT_APP_USE_MOCK_DATA === 'true') {
-            setAvailableOrders(mockAvailableOrders);
-            setError(null);
-            return;
-        }
-
         try {
             setLoading(true);
             const response = await axios.get(`${API_BASE_URL}/api/delivery/available-orders`);
@@ -50,10 +43,7 @@ export const DeliveryProvider = ({ children }) => {
                 return;
             }
 
-            // Fallback to mock data on error
-            console.log('Using fallback mock data for available orders');
-            setAvailableOrders(mockAvailableOrders);
-            setError('Using offline data - some features may be limited');
+            setError('Failed to fetch available orders');
         } finally {
             setLoading(false);
         }
@@ -62,13 +52,6 @@ export const DeliveryProvider = ({ children }) => {
     // Fetch active deliveries
     const fetchActiveDeliveries = async (retryCount = 0) => {
         if (!isAuthenticated) return;
-
-        // Use mock data if enabled
-        if (process.env.REACT_APP_USE_MOCK_DATA === 'true') {
-            setActiveDeliveries(mockActiveDeliveries);
-            setError(null);
-            return;
-        }
 
         try {
             const response = await axios.get(`${API_BASE_URL}/api/delivery/active-deliveries`);
@@ -83,10 +66,7 @@ export const DeliveryProvider = ({ children }) => {
                 return;
             }
 
-            // Fallback to mock data
-            console.log('Using fallback mock data for active deliveries');
-            setActiveDeliveries(mockActiveDeliveries);
-            setError('Using offline data - some features may be limited');
+            setError('Failed to fetch active deliveries');
         }
     };
 
@@ -109,13 +89,6 @@ export const DeliveryProvider = ({ children }) => {
     const fetchEarnings = async () => {
         if (!isAuthenticated) return;
 
-        // Use mock data if enabled
-        if (process.env.REACT_APP_USE_MOCK_DATA === 'true') {
-            setEarnings(mockEarnings);
-            setError(null);
-            return;
-        }
-
         try {
             const response = await axios.get(`${API_BASE_URL}/api/delivery/earnings`);
             setEarnings(response.data);
@@ -123,10 +96,7 @@ export const DeliveryProvider = ({ children }) => {
         } catch (error) {
             console.error('Failed to fetch earnings:', error);
 
-            // Fallback to mock data
-            console.log('Using fallback mock data for earnings');
-            setEarnings(mockEarnings);
-            setError('Using offline data - some features may be limited');
+            setError('Failed to fetch earnings data');
         }
     };
 

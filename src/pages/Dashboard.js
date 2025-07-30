@@ -19,7 +19,7 @@ export default function Dashboard() {
         acceptOrder,
         refreshData
     } = useContext(DeliveryContext);
-    const { currentLocation, isTracking, startTracking, getDistance } = useContext(LocationContext);
+    const { currentLocation, isTracking, startTracking, getDistance, requestLocationPermission, permissionStatus } = useContext(LocationContext);
     const { isConnected, notifications } = useContext(SocketContext);
 
     const [showLocationPrompt, setShowLocationPrompt] = useState(false);
@@ -43,10 +43,12 @@ export default function Dashboard() {
 
     // Check location permission on mount
     useEffect(() => {
-        if (!isTracking && deliveryBoy?.isOnline) {
+        if (!isTracking && deliveryBoy?.isOnline && permissionStatus !== 'granted') {
             setShowLocationPrompt(true);
+        } else if (isTracking || permissionStatus === 'granted') {
+            setShowLocationPrompt(false);
         }
-    }, [isTracking, deliveryBoy?.isOnline]);
+    }, [isTracking, deliveryBoy?.isOnline, permissionStatus]);
 
     const handleGoOnline = async () => {
         if (!currentLocation && !isTracking) {
@@ -85,9 +87,22 @@ export default function Dashboard() {
     };
 
     const handleEnableLocation = async () => {
-        const success = await startTracking();
-        if (success) {
-            setShowLocationPrompt(false);
+        try {
+            // First request permission if needed
+            if (permissionStatus === 'prompt') {
+                await requestLocationPermission();
+            }
+
+            // Then start tracking
+            const success = await startTracking();
+            if (success) {
+                setShowLocationPrompt(false);
+            } else {
+                alert('Failed to start location tracking. Please check your browser settings.');
+            }
+        } catch (error) {
+            console.error('Location enable error:', error);
+            alert('Location access is required for delivery tracking. Please enable location services in your browser settings.');
         }
     };
 
