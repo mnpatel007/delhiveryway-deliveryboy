@@ -315,7 +315,7 @@ export default function OrdersPage() {
                                                         <div className="detail-item">
                                                             <span className="label">Distance:</span>
                                                             <span className="value">
-                                                                {order.distance ? `${order.distance.toFixed(1)} km` : `${(Math.random() * 5 + 1).toFixed(1)} km`}
+                                                                {order.distance && order.distance > 0 ? `${order.distance.toFixed(1)} km` : 'Calculating...'}
                                                             </span>
                                                         </div>
                                                     </div>

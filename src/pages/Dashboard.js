@@ -318,7 +318,7 @@ export default function Dashboard() {
                                     <div key={order._id} className="order-card available">
                                         <div className="order-header">
                                             <span className="order-id">#{order._id.slice(-6)}</span>
-                                            <span className="earning">₹30</span>
+                                            <span className="earning">₹{order.deliveryEarnings || 30}</span>
                                         </div>
                                         <div className="order-details">
                                             <div className="customer-info">
@@ -327,12 +327,10 @@ export default function Dashboard() {
                                                 <p>Delivery: {order.deliveryAddress}</p>
                                                 <div className="distance">
                                                     📍 {(() => {
-                                                        if (order.distance) return `${order.distance.toFixed(1)} km`;
-                                                        if (currentLocation && order.deliveryAddress) {
-                                                            // For demo, show a fixed distance since we don't have coordinates
-                                                            return `${(Math.random() * 5 + 1).toFixed(1)} km`;
+                                                        if (order.distance && order.distance > 0) {
+                                                            return `${order.distance.toFixed(1)} km`;
                                                         }
-                                                        return 'Distance unavailable';
+                                                        return 'Distance calculating...';
                                                     })()}
                                                 </div>
                                             </div>
